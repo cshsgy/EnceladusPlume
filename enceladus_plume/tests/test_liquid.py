@@ -84,7 +84,8 @@ class TestLiquidDynamicsSolver:
         cfg.liquid_dynamics.n_periods = 1
         cfg.liquid_dynamics.max_step = 100.0
 
-        w_rec, h_rec, t_rec = liquid_dynamics(w_in, t_in, L, cfg)
+        w_rec, h_rec, t_rec, v_rec = liquid_dynamics(w_in, t_in, L, cfg)
         assert len(w_rec) > 10
         assert len(h_rec) == len(t_rec)
+        assert len(v_rec) == len(t_rec)
         assert t_rec[-1] > 0

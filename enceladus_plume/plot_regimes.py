@@ -43,7 +43,7 @@ for idx, (wmin, wmaxmin, label, desc) in enumerate(representatives):
     print(f"Running {label}: wmin={wmin}, wmaxmin={wmaxmin} ...")
     eps = 0.5 * (wmaxmin - 1.0)
     w_in = wmin * (1.0 + eps * (1.0 - np.cos(omega * t_in)))
-    w_rec, h_rec, t_rec = liquid_dynamics(w_in, t_in, L, cfg)
+    w_rec, h_rec, t_rec, _v_rec = liquid_dynamics(w_in, t_in, L, cfg)
 
     t_days = t_rec / 86400.0
 
@@ -117,7 +117,7 @@ for i, (wmin, wmaxmin, label, desc) in enumerate(representatives):
     print(f"Zoom: {label} wmin={wmin}, wmaxmin={wmaxmin} ...")
     eps = 0.5 * (wmaxmin - 1.0)
     w_in = wmin * (1.0 + eps * (1.0 - np.cos(omega * t_in)))
-    w_rec, h_rec, t_rec = liquid_dynamics(w_in, t_in, L, cfg)
+    w_rec, h_rec, t_rec, _v_rec = liquid_dynamics(w_in, t_in, L, cfg)
 
     last_mask = t_rec > (cfg.liquid_dynamics.n_periods - 1) * P
     if np.sum(last_mask) > 10:

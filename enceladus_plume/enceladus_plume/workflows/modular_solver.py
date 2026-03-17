@@ -47,7 +47,7 @@ def slip_run(
     P = cfg.physical.orbital_period
     D0 = L / 10.0
 
-    w_rec, h_rec, t_rec = liquid_dynamics(w_in, t_in, L, cfg)
+    w_rec, h_rec, t_rec, _v_rec = liquid_dynamics(w_in, t_in, L, cfg)
 
     # Shift to keep one cycle
     while t_rec[-1] > P / 2:

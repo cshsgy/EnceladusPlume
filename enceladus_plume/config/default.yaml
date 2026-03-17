@@ -2,7 +2,8 @@ physical:
   gravity: 0.113              # m/s^2, Enceladus surface gravity
   thermal_diffusivity: 1.0e-6 # m^2/s, ice thermal diffusivity
   thermal_conductivity: 3.0   # W/(m*K), ice thermal conductivity
-  latent_heat: 2.84e6         # J/kg, sublimation latent heat
+  latent_heat: 2.84e+6        # J/kg, sublimation latent heat
+  latent_heat_fusion: 3.34e+5 # J/kg, fusion latent heat (ice <-> water)
   effective_surface_temp: 68  # K, radiative equilibrium temperature
   orbital_period: 118800      # s, Enceladus orbital period (~1.37 days)
   equilibrium_depth: 20000    # m, crack length / equilibrium water depth L

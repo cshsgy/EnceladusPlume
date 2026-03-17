@@ -20,6 +20,7 @@ class PhysicalParams:
     thermal_diffusivity: float = 1.0e-6
     thermal_conductivity: float = 3.0
     latent_heat: float = 2.84e6
+    latent_heat_fusion: float = 3.34e5
     effective_surface_temp: float = 68.0
     orbital_period: float = 118800.0
     equilibrium_depth: float = 20000.0

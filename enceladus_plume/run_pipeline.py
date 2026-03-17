@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
 from enceladus_plume.config import load_config, Config
-from enceladus_plume.liquid_dynamics.solver import liquid_dynamics
+from enceladus_plume.liquid_dynamics.solver import liquid_dynamics, compute_overflow_rate
 from enceladus_plume.gas_dynamics.interpolator import build_lookup_from_bounds
 from enceladus_plume.gas_dynamics.lookup import GasLookupTable
 
@@ -40,15 +40,15 @@ def _run_liquid_case(
     eps = 0.5 * (wmaxmin - 1.0)
     w_in = wmin * (1.0 + eps * (1.0 - np.cos(omega * t_in)))
 
-    w_rec, h_rec, t_rec = liquid_dynamics(w_in, t_in, L, cfg)
+    w_rec, h_rec, t_rec, v_rec = liquid_dynamics(w_in, t_in, L, cfg)
 
     D = L / 10.0
     depth_rec = D - h_rec
 
     return dict(
         wmin=wmin, wmaxmin=wmaxmin,
-        t_rec=t_rec, h_rec=h_rec, w_rec=w_rec,
-        depth_rec=depth_rec,
+        t_rec=t_rec, h_rec=h_rec, w_rec=w_rec, v_rec=v_rec,
+        depth_rec=depth_rec, w_in=w_in, t_in=t_in,
     )
 
 
@@ -128,46 +128,64 @@ def main():
 
     lookup_path = str(out_dir / "lookup_table.npz")
 
-    t0 = time.time()
-    build_lookup_from_bounds(
-        depth_range=(depth_min, depth_max),
-        width_range=(width_min, width_max),
-        n_grid=n_grid,
-        Tb=np.array(Tb_list),
-        output_path=lookup_path,
-        n_jobs=n_jobs,
-        depth_margin=depth_margin,
-        width_margin=width_margin,
-        width_spacing=width_spacing,
-    )
-    logger.info("  Lookup table built in %.1f s", time.time() - t0)
+    if Path(lookup_path).exists() and not run_cfg.get("force_rebuild_lookup", False):
+        logger.info("  Reusing existing lookup table: %s", lookup_path)
+    else:
+        t0 = time.time()
+        build_lookup_from_bounds(
+            depth_range=(depth_min, depth_max),
+            width_range=(width_min, width_max),
+            n_grid=n_grid,
+            Tb=np.array(Tb_list),
+            output_path=lookup_path,
+            n_jobs=n_jobs,
+            depth_margin=depth_margin,
+            width_margin=width_margin,
+            width_spacing=width_spacing,
+        )
+        logger.info("  Lookup table built in %.1f s", time.time() - t0)
 
     # ------------------------------------------------------------------
     # Step 4: vectorized gas interpolation
     # ------------------------------------------------------------------
-    logger.info("=== Step 4: Vectorized gas interpolation ===")
+    logger.info("=== Step 4: Vectorized gas interpolation + overflow ===")
     lookup = GasLookupTable(lookup_path)
     Tb_interp = float(np.mean(Tb_list))
+
+    Lv = float(cfg.physical.latent_heat)
+    Lf = float(cfg.physical.latent_heat_fusion)
+    f_evap = Lf / (Lv + Lf)
+    rho_w = float(cfg.physical.liquid_density)
+    L = float(cfg.physical.equilibrium_depth)
+    logger.info("  Overflow evap fraction f_evap = Lf/(Lv+Lf) = %.4f", f_evap)
 
     summary_rows: list[dict] = []
 
     for res in liquid_results:
         wmin = res["wmin"]
         wmaxmin = res["wmaxmin"]
-        logger.info("  Gas interp: wmin=%.3f  wmaxmin=%.1f ...", wmin, wmaxmin)
+        logger.info("  Gas interp + overflow: wmin=%.3f  wmaxmin=%.1f ...",
+                     wmin, wmaxmin)
 
         r_arr, phi_arr, rho_arr, phi0_arr = lookup.query_vectorized(
             Tb_interp, res["depth_rec"], res["w_rec"])
 
-        mass_flux = phi_arr * res["w_rec"]
-        mass_flux_base = phi0_arr * res["w_rec"]
+        gas_mass_flux = phi_arr * res["w_rec"]
+
+        overflow_dhdt = compute_overflow_rate(
+            res["t_rec"], res["v_rec"], res["h_rec"],
+            res["w_in"], res["t_in"], L, cfg)
+        overflow_evap_flux = f_evap * rho_w * res["w_rec"] * overflow_dhdt
+        total_mass_flux = gas_mass_flux + overflow_evap_flux
 
         res["r"] = r_arr
         res["phi_top"] = phi_arr
         res["rho_top"] = rho_arr
         res["phi0"] = phi0_arr
-        res["mass_flux"] = mass_flux
-        res["mass_flux_base"] = mass_flux_base
+        res["gas_mass_flux"] = gas_mass_flux
+        res["overflow_evap_flux"] = overflow_evap_flux
+        res["mass_flux"] = total_mass_flux
+        res["overflow_dhdt"] = overflow_dhdt
 
         case_name = f"wmin{wmin:.3f}_ratio{wmaxmin:.1f}"
         case_path = str(out_dir / f"{case_name}.npz")
@@ -177,10 +195,14 @@ def main():
             t=res["t_rec"], h=res["h_rec"], w=res["w_rec"],
             depth=res["depth_rec"],
             r=r_arr, phi_top=phi_arr, rho_top=rho_arr, phi0=phi0_arr,
-            mass_flux=mass_flux, mass_flux_base=mass_flux_base,
+            gas_mass_flux=gas_mass_flux,
+            overflow_evap_flux=overflow_evap_flux,
+            mass_flux=total_mass_flux,
+            overflow_dhdt=overflow_dhdt,
         )
 
-        valid = np.isfinite(mass_flux)
+        valid = np.isfinite(total_mass_flux)
+        overflow_total = float(np.nansum(overflow_evap_flux))
         summary_rows.append(dict(
             wmin=wmin,
             wmaxmin=wmaxmin,
@@ -188,7 +210,9 @@ def main():
             h_min=float(np.nanmin(res["h_rec"])),
             h_max=float(np.nanmax(res["h_rec"])),
             phi_top_mean=float(np.nanmean(phi_arr[valid])) if np.any(valid) else np.nan,
-            mass_flux_mean=float(np.nanmean(mass_flux[valid])) if np.any(valid) else np.nan,
+            mass_flux_mean=float(np.nanmean(total_mass_flux[valid])) if np.any(valid) else np.nan,
+            overflow_frac=float(np.nansum(overflow_evap_flux) /
+                                max(np.nansum(total_mass_flux), 1e-30)),
             pct_valid=float(np.sum(valid) / len(valid) * 100),
         ))
 
@@ -206,6 +230,7 @@ def main():
         h_max=np.array([r["h_max"] for r in summary_rows]),
         phi_top_mean=np.array([r["phi_top_mean"] for r in summary_rows]),
         mass_flux_mean=np.array([r["mass_flux_mean"] for r in summary_rows]),
+        overflow_frac=np.array([r["overflow_frac"] for r in summary_rows]),
         pct_valid=np.array([r["pct_valid"] for r in summary_rows]),
     )
     logger.info("Summary saved to %s", summary_path)
@@ -300,7 +325,7 @@ def _generate_plots(
     plt.close(fig1)
     logger.info("  Saved %s", p1)
 
-    # --- Figure 2: mass flux grid ---
+    # --- Figure 2: mass flux grid (gas + overflow) ---
     fig2, axes2 = plt.subplots(
         nrow, ncol, figsize=(4.0 * ncol, 3.0 * nrow),
         squeeze=False, constrained_layout=True,
@@ -312,29 +337,44 @@ def _generate_plots(
             ax = axes2[i, j]
             res = _lookup_result(results, wmin, wmaxmin)
             t_rec = res["t_rec"]
-            mf = res["mass_flux"]
+            mf_total = res["mass_flux"]
+            mf_gas = res.get("gas_mass_flux", mf_total)
+            mf_over = res.get("overflow_evap_flux")
 
             last_mask = t_rec > (cfg.liquid_dynamics.n_periods - 1) * P
             if np.sum(last_mask) > 10:
                 t_phase = (t_rec[last_mask] - t_rec[last_mask][0]) / P
-                mf_lp = mf[last_mask]
+                mf_t_lp = mf_total[last_mask]
+                mf_g_lp = mf_gas[last_mask]
+                mf_o_lp = mf_over[last_mask] if mf_over is not None else None
             else:
                 t_phase = t_rec / (P * cfg.liquid_dynamics.n_periods)
-                mf_lp = mf
+                mf_t_lp = mf_total
+                mf_g_lp = mf_gas
+                mf_o_lp = mf_over
 
             color = _CMAP_WMIN.get(wmin, "#333333")
-            ax.plot(t_phase, mf_lp, color=color, linewidth=0.9)
+            ax.plot(t_phase, mf_t_lp, color=color, linewidth=0.9, label="total")
 
-            valid = np.isfinite(mf_lp)
+            has_overflow = mf_o_lp is not None and np.nanmax(mf_o_lp) > 1e-10
+            if has_overflow:
+                ax.fill_between(t_phase, mf_g_lp, mf_t_lp,
+                                color="#d62728", alpha=0.3, label="overflow evap")
+                ax.plot(t_phase, mf_g_lp, color=color, linewidth=0.5,
+                        linestyle="--", alpha=0.6, label="gas only")
+
+            valid = np.isfinite(mf_t_lp)
             if np.any(valid):
-                mf_lo = float(np.nanmin(mf_lp[valid]))
-                mf_hi = float(np.nanmax(mf_lp[valid]))
+                mf_lo = float(np.nanmin(mf_t_lp[valid]))
+                mf_hi = float(np.nanmax(mf_t_lp[valid]))
                 mf_margin = max(0.15 * (mf_hi - mf_lo), 0.01)
-                ax.set_ylim(mf_lo - mf_margin, mf_hi + mf_margin)
-                mf_mean = float(np.nanmean(mf_lp[valid]))
+                ax.set_ylim(max(mf_lo - mf_margin, 0), mf_hi + mf_margin)
+                mf_mean = float(np.nanmean(mf_t_lp[valid]))
                 ax.axhline(mf_mean, color=color, linewidth=0.7, linestyle=":",
                            alpha=0.6, label=f"mean={mf_mean:.3f}")
-                ax.legend(fontsize=6, loc="best")
+
+            if has_overflow or (i == 0 and j == 0):
+                ax.legend(fontsize=5, loc="best")
 
             ax.set_title(
                 f"$w_{{min}}$={wmin} m, ratio={wmaxmin}",
@@ -352,11 +392,12 @@ def _generate_plots(
     plt.close(fig2)
     logger.info("  Saved %s", p2)
 
-    # --- Figure 3: summary heatmap of mean mass flux ---
+    # --- Figure 3: summary heatmaps (total flux, overflow fraction, amplitude) ---
     nw = len(wmin_list)
     nr = len(wmaxmin_list)
     mf_grid = np.full((nw, nr), np.nan)
     amp_grid = np.full((nw, nr), np.nan)
+    ov_grid = np.full((nw, nr), np.nan)
 
     for res in results:
         i = wmin_list.index(res["wmin"])
@@ -364,6 +405,11 @@ def _generate_plots(
         valid = np.isfinite(res["mass_flux"])
         if np.any(valid):
             mf_grid[i, j] = float(np.nanmean(res["mass_flux"][valid]))
+            gas_sum = float(np.nansum(res.get("gas_mass_flux", res["mass_flux"])[valid]))
+            ov_sum = float(np.nansum(res.get("overflow_evap_flux",
+                                             np.zeros_like(res["mass_flux"]))[valid]))
+            total_sum = gas_sum + ov_sum
+            ov_grid[i, j] = ov_sum / max(total_sum, 1e-30) * 100.0
 
         last_mask = res["t_rec"] > (cfg.liquid_dynamics.n_periods - 1) * P
         if np.sum(last_mask) > 10:
@@ -372,7 +418,8 @@ def _generate_plots(
             h_lp = res["h_rec"]
         amp_grid[i, j] = float(np.nanmax(h_lp) - np.nanmin(h_lp))
 
-    fig3, (ax_mf, ax_amp) = plt.subplots(1, 2, figsize=(14, 5), constrained_layout=True)
+    fig3, (ax_mf, ax_ov, ax_amp) = plt.subplots(
+        1, 3, figsize=(20, 5), constrained_layout=True)
 
     im1 = ax_mf.imshow(
         mf_grid, origin="lower", aspect="auto",
@@ -390,8 +437,27 @@ def _generate_plots(
     ax_mf.set_yticks(wmin_list)
     ax_mf.set_xlabel("$w_{max}/w_{min}$", fontsize=11)
     ax_mf.set_ylabel("$w_{min}$ (m)", fontsize=11)
-    ax_mf.set_title("Mean mass flux (kg/m/s)", fontsize=12, fontweight="bold")
+    ax_mf.set_title("Mean total mass flux (kg/m/s)", fontsize=12, fontweight="bold")
     fig3.colorbar(im1, ax=ax_mf, shrink=0.8)
+
+    im_ov = ax_ov.imshow(
+        ov_grid, origin="lower", aspect="auto",
+        extent=[wmaxmin_list[0] - 0.5, wmaxmin_list[-1] + 0.5,
+                wmin_list[0] - 0.025, wmin_list[-1] + 0.025],
+        cmap="Reds", vmin=0,
+    )
+    for i in range(nw):
+        for j in range(nr):
+            val = ov_grid[i, j]
+            if np.isfinite(val):
+                ax_ov.text(wmaxmin_list[j], wmin_list[i], f"{val:.1f}%",
+                           ha="center", va="center", fontsize=8, fontweight="bold")
+    ax_ov.set_xticks(wmaxmin_list)
+    ax_ov.set_yticks(wmin_list)
+    ax_ov.set_xlabel("$w_{max}/w_{min}$", fontsize=11)
+    ax_ov.set_ylabel("$w_{min}$ (m)", fontsize=11)
+    ax_ov.set_title("Overflow evap fraction (%)", fontsize=12, fontweight="bold")
+    fig3.colorbar(im_ov, ax=ax_ov, shrink=0.8)
 
     im2 = ax_amp.imshow(
         amp_grid, origin="lower", aspect="auto",
