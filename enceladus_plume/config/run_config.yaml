@@ -1,0 +1,27 @@
+# Pipeline run configuration
+# Launch with: ./run_pipeline.sh  or  python run_pipeline.py --config config/run_config.yaml
+
+base_config: null  # path to a custom default.yaml override, or null for built-in defaults
+
+sweep:
+  wmin: [0.10, 0.20, 0.50, 1.00]
+  wmaxmin: [2.0, 3.0, 4.0, 5.0, 8.0]
+
+liquid_dynamics:
+  n_periods: 4
+  ode_method: "DOP853"
+  rtol: 1.0e-8
+  atol: 1.0e-8
+  max_step: 50.0
+  npts_velocity: 200
+
+lookup_table:
+  n_grid: 60           # grid points per axis (width and depth)
+  depth_margin: 0.1    # fractional margin added to depth range
+  width_margin: 0.1    # fractional margin added to width range
+  width_spacing: "log"  # "log" concentrates points at narrow widths; "linear" for uniform
+  Tb: [272.0, 273.1501]
+  jobs: -1             # joblib n_jobs (-1 = all cores)
+
+output:
+  directory: "results"

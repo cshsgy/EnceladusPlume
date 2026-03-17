@@ -1,0 +1,59 @@
+physical:
+  gravity: 0.113              # m/s^2, Enceladus surface gravity
+  thermal_diffusivity: 1.0e-6 # m^2/s, ice thermal diffusivity
+  thermal_conductivity: 3.0   # W/(m*K), ice thermal conductivity
+  latent_heat: 2.84e6         # J/kg, sublimation latent heat
+  effective_surface_temp: 68  # K, radiative equilibrium temperature
+  orbital_period: 118800      # s, Enceladus orbital period (~1.37 days)
+  equilibrium_depth: 20000    # m, crack length / equilibrium water depth L
+  gas_constant_vapor: 462.8333333333333  # J/(kg*K), R = 8.341/0.018
+  stefan_boltzmann: 5.67e-8   # W/(m^2*K^4)
+  water_temperature: 273.15   # K, ocean water temperature
+  liquid_density: 1000.0      # kg/m^3, ocean water density
+  liquid_viscosity: 1.8e-3    # Pa*s, dynamic viscosity of water at ~273 K
+  vapor_viscosity: 8.0e-6     # Pa*s, dynamic viscosity of water vapor at ~250 K
+
+friction:
+  # Model: "constant" (legacy), "laminar" (f=96/Re), "churchill" (all regimes)
+  liquid_model: "churchill"
+  gas_model: "churchill"
+  liquid_Cf_constant: 0.004   # Fanning coeff used when liquid_model="constant"
+  gas_Cf_constant: 0.002      # Fanning coeff used when gas_model="constant"
+  roughness: 0.0              # m, absolute wall roughness (0 = smooth)
+  C_lam: 96.0                 # laminar-regime constant (96 for parallel plates)
+
+liquid_dynamics:
+  npts_velocity: 1000         # grid points for velocity profile integration
+  ode_method: "DOP853"        # scipy solve_ivp method (RK45, DOP853, Radau, BDF, LSODA)
+  rtol: 1.0e-8               # relative tolerance for ODE solver
+  atol: 1.0e-8               # absolute tolerance for ODE solver
+  max_step: 50.0             # s, maximum time step for ODE solver
+  n_periods: 4               # number of orbital periods to integrate
+
+gas_dynamics:
+  bisection_tol: 1.0e-4      # tolerance for bisection on r
+  r_min: 1.0e-5              # lower bound for r search
+  r_max: 0.99999             # upper bound for r search
+  dz: 0.1                    # m, vertical grid spacing for gas column
+  constrained_max_change: 0.005  # max allowed change in r per time step
+  mach_threshold: 1.6        # Mach number threshold for solution validity
+  gamma_eff: 1.33            # effective ratio of specific heats for vapor
+
+heat_diffusion:
+  dx: 0.05                   # m, wall-normal grid spacing
+  max_x: 0.4                 # m, maximum wall-normal depth to solve
+  n_vertical_levels: 100     # number of vertical levels along crack
+  periods_to_run: 60         # number of orbital periods for heat diffusion
+
+interpolation:
+  n_grid: 20                 # number of grid points per dimension for lookup table
+  w_base: 0.2                # m, base (minimum) crack width for modular solver
+
+full_solver:
+  wmin: 0.01                 # m, minimum crack width
+  wmaxmin: 2.0               # ratio wmax/wmin
+  depth: 20000               # m, crack length
+
+modular_solver:
+  times_file: "Times.txt"
+  slips_file: "Slip_Time_Functions.txt"
