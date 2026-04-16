@@ -7,3 +7,4 @@
 .vscode/
 
 *.npz
+enceladus_plume/results_zoom/*.pkl

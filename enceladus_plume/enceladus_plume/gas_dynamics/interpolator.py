@@ -241,6 +241,7 @@ def build_lookup_from_bounds(
     depth_margin: float = 0.1,
     width_margin: float = 0.1,
     width_spacing: str = "log",
+    depth_spacing: str = "log",
 ) -> str:
     """Build a gas dynamics lookup table covering the given ranges.
 
@@ -251,6 +252,9 @@ def build_lookup_from_bounds(
     ----------
     width_spacing : ``"log"`` (default) concentrates grid points at narrow
         widths where the gas dynamics vary most.  ``"linear"`` uses uniform
+        spacing.
+    depth_spacing : ``"log"`` (default) concentrates grid points at shallow
+        depths where phi_top varies most steeply.  ``"linear"`` uses uniform
         spacing.
 
     Returns the output file path.
@@ -266,16 +270,20 @@ def build_lookup_from_bounds(
     w_lo = max(w_lo - width_margin * w_span, 0.02)
     w_hi = w_hi + width_margin * w_span
 
-    depths = np.linspace(d_lo, d_hi, n_grid)
+    if depth_spacing == "log":
+        depths = np.geomspace(d_lo, d_hi, n_grid)
+    else:
+        depths = np.linspace(d_lo, d_hi, n_grid)
 
     if width_spacing == "log":
         deltas = np.geomspace(w_lo, w_hi, n_grid)
     else:
         deltas = np.linspace(w_lo, w_hi, n_grid)
 
-    logger.info("Lookup bounds: depth [%.1f, %.1f] m (%d pts), "
+    logger.info("Lookup bounds: depth [%.1f, %.1f] m (%d pts, %s), "
                 "width [%.4f, %.4f] m (%d pts, %s)",
-                d_lo, d_hi, n_grid, w_lo, w_hi, n_grid, width_spacing)
+                d_lo, d_hi, n_grid, depth_spacing,
+                w_lo, w_hi, n_grid, width_spacing)
 
     if Tb is None:
         Tb = np.array([272.0, 273.1501])

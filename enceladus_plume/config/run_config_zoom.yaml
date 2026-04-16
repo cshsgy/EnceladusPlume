@@ -1,0 +1,31 @@
+# Zoomed sweep: upper-right corner (narrow cracks, high amplitude ratios)
+# Focus on the secondary peak structure
+
+base_config: null
+
+sweep:
+  wmin: [0.05, 0.08, 0.10, 0.12, 0.15, 0.20]
+  wmaxmin: [5.0, 6.0, 8.0, 10.0, 12.0, 15.0]
+
+liquid_dynamics:
+  n_periods: 4
+  ode_method: "DOP853"
+  rtol: 1.0e-8
+  atol: 1.0e-8
+  max_step: 50.0
+  npts_velocity: 200
+
+lookup_table:
+  n_grid: 60
+  depth_margin: 0.1
+  width_margin: 0.1
+  width_spacing: "log"
+  depth_spacing: "log"
+  Tb: [272.0, 273.1501]
+  jobs: -1
+
+force_rebuild_lookup: true
+skip_liquid: true
+
+output:
+  directory: "results_zoom"

@@ -86,17 +86,30 @@ def main():
     # ------------------------------------------------------------------
     # Step 1: liquid dynamics for all cases
     # ------------------------------------------------------------------
-    logger.info("=== Step 1: Running liquid dynamics ===")
-    liquid_results: list[dict] = []
-    for i, (wmin, wmaxmin) in enumerate(cases):
-        t0 = time.time()
-        logger.info("  [%d/%d] wmin=%.3f  wmaxmin=%.1f ...",
-                     i + 1, len(cases), wmin, wmaxmin)
-        res = _run_liquid_case(wmin, wmaxmin, cfg)
-        elapsed = time.time() - t0
-        logger.info("    done in %.1f s  (h range [%.0f, %.0f] m)",
-                     elapsed, np.min(res["h_rec"]), np.max(res["h_rec"]))
-        liquid_results.append(res)
+    import pickle
+    liquid_cache = out_dir / "liquid_cache.pkl"
+    skip_liquid = run_cfg.get("skip_liquid", False)
+
+    if skip_liquid and liquid_cache.exists():
+        logger.info("=== Step 1: Loading cached liquid dynamics ===")
+        with open(liquid_cache, "rb") as fh:
+            liquid_results = pickle.load(fh)
+        logger.info("  Loaded %d cached results from %s", len(liquid_results), liquid_cache)
+    else:
+        logger.info("=== Step 1: Running liquid dynamics ===")
+        liquid_results: list[dict] = []
+        for i, (wmin, wmaxmin) in enumerate(cases):
+            t0 = time.time()
+            logger.info("  [%d/%d] wmin=%.3f  wmaxmin=%.1f ...",
+                         i + 1, len(cases), wmin, wmaxmin)
+            res = _run_liquid_case(wmin, wmaxmin, cfg)
+            elapsed = time.time() - t0
+            logger.info("    done in %.1f s  (h range [%.0f, %.0f] m)",
+                         elapsed, np.min(res["h_rec"]), np.max(res["h_rec"]))
+            liquid_results.append(res)
+        with open(liquid_cache, "wb") as fh:
+            pickle.dump(liquid_results, fh)
+        logger.info("  Cached liquid results to %s", liquid_cache)
 
     # ------------------------------------------------------------------
     # Step 2: analyze global ranges for lookup table
@@ -125,6 +138,7 @@ def main():
     depth_margin = lt_cfg.get("depth_margin", 0.1)
     width_margin = lt_cfg.get("width_margin", 0.1)
     width_spacing = lt_cfg.get("width_spacing", "log")
+    depth_spacing = lt_cfg.get("depth_spacing", "log")
 
     lookup_path = str(out_dir / "lookup_table.npz")
 
@@ -142,6 +156,7 @@ def main():
             depth_margin=depth_margin,
             width_margin=width_margin,
             width_spacing=width_spacing,
+            depth_spacing=depth_spacing,
         )
         logger.info("  Lookup table built in %.1f s", time.time() - t0)
 
