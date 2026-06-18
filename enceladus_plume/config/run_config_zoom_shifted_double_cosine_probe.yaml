@@ -1,0 +1,35 @@
+# Targeted shifted-double-cosine probe around the better wmin=0.10 cases.
+
+base_config: null
+
+forcing:
+  model: "shifted-double-cosine"
+  second_harmonic_phase_deg: 45.0
+  second_harmonic_scale: 1.0
+
+sweep:
+  wmin: [0.10]
+  wmaxmin: [5.0, 8.0, 12.0]
+
+liquid_dynamics:
+  n_periods: 4
+  ode_method: "DOP853"
+  rtol: 1.0e-8
+  atol: 1.0e-8
+  max_step: 50.0
+  npts_velocity: 200
+
+lookup_table:
+  n_grid: 20
+  depth_margin: 0.1
+  width_margin: 0.1
+  width_spacing: "log"
+  depth_spacing: "log"
+  Tb: [272.0, 273.1501]
+  jobs: -1
+
+force_rebuild_lookup: true
+skip_liquid: false
+
+output:
+  directory: "results_zoom_shifted_double_cosine_probe"

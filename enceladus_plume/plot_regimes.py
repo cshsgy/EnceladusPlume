@@ -10,6 +10,7 @@ from matplotlib.gridspec import GridSpec
 
 from enceladus_plume.config import load_config
 from enceladus_plume.liquid_dynamics.solver import liquid_dynamics
+from enceladus_plume.utils import build_width_series
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -21,7 +22,6 @@ D = L / 10.0
 cfg.liquid_dynamics.n_periods = 4
 cfg.liquid_dynamics.npts_velocity = 200
 
-omega = 2.0 * np.pi / P
 t_in = np.arange(100, P + 1, 200.0)
 
 representatives = [
@@ -33,6 +33,7 @@ representatives = [
     (1.00,  2.0, "Case 6", "Wide, small ratio"),
 ]
 colors = ["#d62728", "#ff7f0e", "#2ca02c", "#1f77b4", "#9467bd", "#8c564b"]
+forcing_model = "single-cosine"
 
 # --- Figure 1: full time series, each row auto-scaled ---
 fig = plt.figure(figsize=(14, 18))
@@ -41,8 +42,13 @@ gs = GridSpec(len(representatives), 2, width_ratios=[3, 1], hspace=0.42, wspace=
 
 for idx, (wmin, wmaxmin, label, desc) in enumerate(representatives):
     print(f"Running {label}: wmin={wmin}, wmaxmin={wmaxmin} ...")
-    eps = 0.5 * (wmaxmin - 1.0)
-    w_in = wmin * (1.0 + eps * (1.0 - np.cos(omega * t_in)))
+    w_in = build_width_series(
+        t_in,
+        wmaxmin,
+        wmin,
+        orbital_period=P,
+        forcing_model=forcing_model,
+    )
     w_rec, h_rec, t_rec, _v_rec = liquid_dynamics(w_in, t_in, L, cfg)
 
     t_days = t_rec / 86400.0
@@ -115,8 +121,13 @@ axes2 = axes2.flatten()
 for i, (wmin, wmaxmin, label, desc) in enumerate(representatives):
     ax = axes2[i]
     print(f"Zoom: {label} wmin={wmin}, wmaxmin={wmaxmin} ...")
-    eps = 0.5 * (wmaxmin - 1.0)
-    w_in = wmin * (1.0 + eps * (1.0 - np.cos(omega * t_in)))
+    w_in = build_width_series(
+        t_in,
+        wmaxmin,
+        wmin,
+        orbital_period=P,
+        forcing_model=forcing_model,
+    )
     w_rec, h_rec, t_rec, _v_rec = liquid_dynamics(w_in, t_in, L, cfg)
 
     last_mask = t_rec > (cfg.liquid_dynamics.n_periods - 1) * P

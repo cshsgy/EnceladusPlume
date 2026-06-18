@@ -25,20 +25,26 @@ from enceladus_plume.config import load_config, Config
 from enceladus_plume.liquid_dynamics.solver import liquid_dynamics, compute_overflow_rate
 from enceladus_plume.gas_dynamics.interpolator import build_lookup_from_bounds
 from enceladus_plume.gas_dynamics.lookup import GasLookupTable
+from enceladus_plume.utils import build_width_series
 
 logger = logging.getLogger(__name__)
 
 
 def _run_liquid_case(
-    wmin: float, wmaxmin: float, cfg: Config,
+    wmin: float, wmaxmin: float, cfg: Config, forcing_model: str, forcing_params: dict,
 ) -> dict:
     """Run liquid dynamics for one (wmin, wmaxmin) and return results dict."""
     P = cfg.physical.orbital_period
     L = cfg.physical.equilibrium_depth
-    omega = 2.0 * np.pi / P
     t_in = np.arange(100, P + 1, 200.0)
-    eps = 0.5 * (wmaxmin - 1.0)
-    w_in = wmin * (1.0 + eps * (1.0 - np.cos(omega * t_in)))
+    w_in = build_width_series(
+        t_in,
+        wmaxmin,
+        wmin,
+        orbital_period=P,
+        forcing_model=forcing_model,
+        **forcing_params,
+    )
 
     w_rec, h_rec, t_rec, v_rec = liquid_dynamics(w_in, t_in, L, cfg)
 
@@ -68,6 +74,8 @@ def main():
 
     base_path = run_cfg.get("base_config")
     cfg = load_config(base_path)
+    forcing_cfg = dict(run_cfg.get("forcing", {}))
+    forcing_model = forcing_cfg.pop("model", "single-cosine")
 
     liq_overrides = run_cfg.get("liquid_dynamics", {})
     for key, val in liq_overrides.items():
@@ -80,8 +88,13 @@ def main():
     wmin_list = run_cfg["sweep"]["wmin"]
     wmaxmin_list = run_cfg["sweep"]["wmaxmin"]
     cases = list(itertools.product(wmin_list, wmaxmin_list))
-    logger.info("Sweep: %d cases (%d wmin x %d wmaxmin)",
-                len(cases), len(wmin_list), len(wmaxmin_list))
+    logger.info(
+        "Sweep: %d cases (%d wmin x %d wmaxmin), forcing=%s",
+        len(cases),
+        len(wmin_list),
+        len(wmaxmin_list),
+        forcing_model,
+    )
 
     # ------------------------------------------------------------------
     # Step 1: liquid dynamics for all cases
@@ -102,7 +115,7 @@ def main():
             t0 = time.time()
             logger.info("  [%d/%d] wmin=%.3f  wmaxmin=%.1f ...",
                          i + 1, len(cases), wmin, wmaxmin)
-            res = _run_liquid_case(wmin, wmaxmin, cfg)
+            res = _run_liquid_case(wmin, wmaxmin, cfg, forcing_model, forcing_cfg)
             elapsed = time.time() - t0
             logger.info("    done in %.1f s  (h range [%.0f, %.0f] m)",
                          elapsed, np.min(res["h_rec"]), np.max(res["h_rec"]))

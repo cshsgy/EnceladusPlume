@@ -1,0 +1,33 @@
+# Smaller double-cosine probe sweep for initial two-peak comparison.
+
+base_config: null
+
+forcing:
+  model: "double-cosine"
+
+sweep:
+  wmin: [0.05, 0.10]
+  wmaxmin: [5.0, 8.0, 12.0]
+
+liquid_dynamics:
+  n_periods: 4
+  ode_method: "DOP853"
+  rtol: 1.0e-8
+  atol: 1.0e-8
+  max_step: 50.0
+  npts_velocity: 200
+
+lookup_table:
+  n_grid: 25
+  depth_margin: 0.1
+  width_margin: 0.1
+  width_spacing: "log"
+  depth_spacing: "log"
+  Tb: [272.0, 273.1501]
+  jobs: -1
+
+force_rebuild_lookup: true
+skip_liquid: true
+
+output:
+  directory: "results_zoom_double_cosine_probe"
