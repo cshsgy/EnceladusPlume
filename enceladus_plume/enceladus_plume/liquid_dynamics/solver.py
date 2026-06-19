@@ -13,6 +13,7 @@ import numpy as np
 from scipy.integrate import solve_ivp
 
 from ..config import Config, FrictionParams, LiquidDynamicsParams, PhysicalParams
+from .._native import HAVE_NATIVE, CORE
 from .helpers import vel_now, friction, additional_term
 
 logger = logging.getLogger(__name__)
@@ -23,19 +24,36 @@ def _derivative(v: float, h: float, L: float, g: float,
                 npts: int, fric_kw: dict) -> tuple[float, float]:
     """Compute dv/dt and dh/dt for the liquid column.
 
+    Uses the C++ core when available (see :mod:`enceladus_plume._native`),
+    otherwise the pure-Python implementation below. Both are numerically
+    equivalent.
+
     Parameters
     ----------
     fric_kw : keyword arguments forwarded to :func:`friction`.
 
     Returns (dvdt, dhdt).
     """
+    if HAVE_NATIVE:
+        return CORE.liquid_derivative(
+            v, h, L, g, w, dwdt, dwdt2, npts,
+            fric_kw.get("model", "constant"),
+            fric_kw.get("Cf_constant", 0.004),
+            fric_kw.get("rho", 1000.0),
+            fric_kw.get("mu", 1.8e-3),
+            fric_kw.get("roughness", 0.0),
+            fric_kw.get("C_lam", 96.0),
+        )
+
     col_height = h + L
     if col_height <= 0.0:
         return 0.0, 0.0
 
     zs, v_now_arr = vel_now(v, h, L, w, dwdt, npts)
     fric = friction(zs, v_now_arr, w, **fric_kw)
-    rhs = -0.5 * (v_now_arr[0] ** 2 + v_now_arr[-1] ** 2) - g * h - fric
+    # Advection from integrating the momentum equation: -1/2 (v_h^2 - v0^2),
+    # with v0 = v_now_arr[0] (floor) and v_h = v_now_arr[-1] (water surface).
+    rhs = -0.5 * (v_now_arr[-1] ** 2 - v_now_arr[0] ** 2) - g * h - fric
     add_term = additional_term(zs, w, dwdt, dwdt2)
     rhs = rhs - add_term
     dvdt = rhs / col_height

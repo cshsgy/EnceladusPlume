@@ -1,0 +1,832 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% AGUJournalTemplate.tex: this template file is for articles formatted with LaTeX
+%
+% This file includes commands and instructions
+% given in the order necessary to produce a final output that will
+% satisfy AGU requirements, including customized APA reference formatting.
+%
+% You may copy this file and give it your
+% article name, and enter your text.
+%
+% guidelines and troubleshooting are here: 
+
+%% To submit your paper:
+\documentclass[draft]{agujournal2019}
+\usepackage{url} %this package should fix any errors with URLs in refs.
+\usepackage{lineno}
+\usepackage[inline]{trackchanges} %for better track changes. finalnew option will compile document with changes incorporated.
+\usepackage{soul}
+\linenumbers
+%%%%%%%
+% As of 2018 we recommend use of the TrackChanges package to mark revisions.
+% The trackchanges package adds five new LaTeX commands:
+%
+%  \note[editor]{The note}
+%  \annote[editor]{Text to annotate}{The note}
+%  \add[editor]{Text to add}
+%  \remove[editor]{Text to remove}
+%  \change[editor]{Text to remove}{Text to add}
+%
+% complete documentation is here: http://trackchanges.sourceforge.net/
+%%%%%%%
+
+\draftfalse
+
+%% Enter journal name below.
+%% Choose from this list of Journals:
+%
+% JGR: Atmospheres
+% JGR: Biogeosciences
+% JGR: Earth Surface
+% JGR: Oceans
+% JGR: Planets
+% JGR: Solid Earth
+% JGR: Space Physics
+% Global Biogeochemical Cycles
+% Geophysical Research Letters
+% Paleoceanography and Paleoclimatology
+% Radio Science
+% Reviews of Geophysics
+% Tectonics
+% Space Weather
+% Water Resources Research
+% Geochemistry, Geophysics, Geosystems
+% Journal of Advances in Modeling Earth Systems (JAMES)
+% Earth's Future
+% Earth and Space Science
+% Geohealth
+%
+% ie, \journalname{Water Resources Research}
+
+\journalname{Enter journal name here}
+
+
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  TITLE
+%
+% (A title should be specific, informative, and brief. Use
+% abbreviations only if they are defined in the abstract. Titles that
+% start with general keywords then specific terms are optimized in
+% searches)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Example: \title{This is a test title}
+
+\title{=enter title here=}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  AUTHORS AND AFFILIATIONS
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Authors are individuals who have significantly contributed to the
+% research and preparation of the article. Group authors are allowed, if
+% each author in the group is separately identified in an appendix.)
+
+% List authors by first name or initial followed by last name and
+% separated by commas. Use \affil{} to number affiliations, and
+% \thanks{} for author notes.
+% Additional author notes should be indicated with \thanks{} (for
+% example, for current addresses).
+
+% Example: \authors{A. B. Author\affil{1}\thanks{Current address, Antartica}, B. C. Author\affil{2,3}, and D. E.
+% Author\affil{3,4}\thanks{Also funded by Monsanto.}}
+
+\authors{=list all authors here=}
+
+
+% \affiliation{1}{First Affiliation}
+% \affiliation{2}{Second Affiliation}
+% \affiliation{3}{Third Affiliation}
+% \affiliation{4}{Fourth Affiliation}
+
+\affiliation{=number=}{=Affiliation Address=}
+%(repeat as many times as is necessary)
+
+
+% Corresponding author mailing address and e-mail address:
+
+% (include name and email addresses of the corresponding author.  More
+% than one corresponding author is allowed in this LaTeX file and for
+% publication; but only one corresponding author is allowed in our
+% editorial system.)
+
+% Example: \correspondingauthor{First and Last Name}{email@address.edu}
+
+\correspondingauthor{=name=}{=email address=}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% KEY POINTS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  List up to three key points (at least one is required)
+%  Key Points summarize the main points and conclusions of the article
+%  Each must be 140 characters or fewer with no special characters or punctuation and must be complete sentences
+
+% Example:
+% \begin{keypoints}
+% \item	List up to three key points (at least one is required)
+% \item	Key Points summarize the main points and conclusions of the article
+% \item	Each must be 140 characters or fewer with no special characters or punctuation and must be complete sentences
+% \end{keypoints}
+
+\begin{keypoints}
+\item enter point 1 here
+\item enter point 2 here
+\item enter point 3 here
+\end{keypoints}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  ABSTRACT and PLAIN LANGUAGE SUMMARY
+%
+% A good Abstract will begin with a short description of the problem
+% being addressed, briefly describe the new data or analyses, then
+% briefly states the main conclusion(s) and how they are supported and
+% uncertainties.
+
+% The Plain Language Summary should be written for a broad audience,
+% including journalists and the science-interested public, that will not have 
+% a background in your field.
+%
+% A Plain Language Summary is required in GRL, JGR: Planets, JGR: Biogeosciences,
+% JGR: Oceans, G-Cubed, Reviews of Geophysics, and JAMES.
+% see http://sharingscience.agu.org/creating-plain-language-summary/)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% \begin{abstract} starts the second page
+
+\begin{abstract}
+[ enter your Abstract here ]
+\end{abstract}
+
+\section*{Plain Language Summary}
+Enter your Plain Language Summary here or delete this section.
+Here are instructions on writing a Plain Language Summary: 
+https://www.agu.org/Share-and-Advocate/Share/Community/Plain-language-summary
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  BODY TEXT
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% Suggested section heads:
+% \section{Introduction}
+%
+% The main text should start with an introduction. Except for short
+% manuscripts (such as comments and replies), the text should be divided
+% into sections, each with its own heading.
+
+% Headings should be sentence fragments and do not begin with a
+% lowercase letter or number. Examples of good headings are:
+
+% \section{Materials and Methods}
+% Here is text on Materials and Methods.
+%
+% \subsection{A descriptive heading about methods}
+% More about Methods.
+%
+% \section{Data} (Or section title might be a descriptive heading about data)
+%
+% \section{Results} (Or section title might be a descriptive heading about the
+% results)
+%
+% \section{Conclusions}
+
+\chapter{Aerosols in the vacuum: modelling the time variability of the plume of Enceladus}
+
+\begin{refsection}
+\begin{abstract}
+    Previous studies have examined the dynamics of water vapor arising from liquid water in the cracks near the south pole of Enceladus \cite{nimmo2007shear,Schmidt2008,ingersoll2010subsurface,postberg2011salt,nimmo2014tidally,kite2016sustained,nakajima2016controlled}. In this work, we present a model in which the water level rises and falls due to the diurnal widening and narrowing of the walls. We also consider sublimation from the walls as they are periodically covered and uncovered by liquid water. Our goal is to look for evidence of a two-way exchange of water between the oxidizing surface and the reducing ocean, which is in contact with solid rock. Such exchange would be a source of chemical energy and is relevant to the habitability of Enceladus \cite{parkinson2008habitability}. We present the calculated water level and water vapor mass flux of the plumes from a straight crack whose width widens and narrows over a diurnal cycle. We compare the results of our model to the observed diurnal variations of the plume activities, which have a main peak near mean anomaly (MA) of 180 degrees and a secondary peak near MA of 50 degrees \cite{hedman2013observed,ingersoll2020time,nimmo2014tidally}. Two different mechanisms that can produce secondary peaks are proposed, and the secondary peak that produces the same timing as observations comes from heat storage in a thin thermal layer of the walls.
+\end{abstract}
+
+\section{Introduction}
+In 2005, the Cassini spacecraft found a geologically active south pole on Saturn’s moon Enceladus \cite{porco2006cassini}. Plumes that contain vapor and icy particles were identified and were considered to supply Saturn’s E-ring. The plumes emanate from four major fractures that sum up to about 500 km in length, and their locations agree well with the hotspots identified in infrared images \cite{spitale2007association}. The analysis of the Cassini Ultraviolet Imaging Spectrograph (UVIS) data in solar occultation reveals that the total rate of emission of water vapor from the surface is 200~400 kg/s \cite{hansen2011composition, hansen2017investigation}. Data from the Cosmic Dust Analyzer (CDA) and the Ion and Neutral Mass Spectrometer (INMS) revealed macromolecular organic compounds in the icy grains \cite{postberg2018macromolecular}. Being a region with far more infrared emission than other parts of the planet, the value of the non-solar radiated power from the south polar region ranges from 4.2 GW \cite{spencer2013enceladus} and 5.8$\pm$1.9GW \cite{spencer2006cassini} to 15.8$\pm$3.1GW \cite{howett2011high}.
+
+By observing the details of the plume structures and compositions, the ice/vapor ratio is estimated to be 0.35~0.70, indicating that a liquid reservoir might be the source of the plumes \cite{ingersoll2011total}. Further studies that reveal the existence of salt-rich ice grains and organic compounds in the plumes increased the confidence that the plumes originated from a liquid source \cite{postberg2018macromolecular}. It has been confirmed later that the amplitude of the forced libration of Enceladus is too large for a model in which the icy crust is rigidly connected with its rocky core \cite{thomas2016enceladus}. This implies the presence of a global ocean on Enceladus. If the tiger stripes are considered strike-slip faults, the shear heating would be sufficient to support the existence of liquid water in the cracks \cite{parkinson2008habitability}. If two walls are decoupled and form a water-filled crack, the turbulent dissipation could supply the observed amount of heat emission from the south pole \cite{kite2016sustained}. 
+
+Our goal is to further understand the dynamics and time variability of the plumes, as shown in Fig. \ref{fig:enc:1}. The plume brightness, which is related to the abundance of micron-sized particles, is 4-5 times greater at the apocenter than at the pericenter. The maximum occurs about 20 degrees in orbital phase after the apocenter. A secondary maximum occurs about 40 degrees after the pericenter \cite{hedman2013observed,ingersoll2017decadal}. The variability is thought to be evidence of the opening and closing of the cracks due to the eccentricity tide, potentially with a physical libration and a viscoelastic interior \cite{hurford2007eruptions,nimmo2014tidally}. The timing of the plume eruptions has also received explanations from a specific interior viscosity structure \cite{bvehounkova2017plume}.
+
+\begin{figure}[hbt!]
+    \centering
+    \includegraphics[width=0.5\textwidth]{Figures/Figure_1.pdf}
+    \caption{Slab density vs mean anomaly, adapted from \citeA{ingersoll2020time}. The data are grouped in three-year intervals and show a distinct secondary peak at around MA 50 degrees. Slab density is the mass of ice particles per unit thickness of a horizontally infinite slab above the south pole. The figure shows slab density at 100 km altitude. It is derived from the observed brightness using a model of how the particles scatter light.}
+    \label{fig:enc:1}
+\end{figure}
+
+In this paper, we focus on the secondary peak observed as shown in Fig. \ref{fig:enc:1} \cite{hedman2013observed,ingersoll2020time,nimmo2014tidally}, and use the rise and fall of the water as an indic of two-way mass transfer between surface and ocean. We present the configuration of the model and the simulation results and make comparisons with the observations.
+
+The thermal coupling between the liquid water and the walls was previously modeled by considering the turbulent dissipation of water as it moved up and down in response to the widening and narrowing of the cracks \cite{kite2016sustained}. Changes in the height of the liquid-gas interface were noted but not included in their discussion of heat dissipation. We show that water level changes are important only when the mass of the plumes is considered. Such rising and falling of the water level come from vertical pressure gradients, one due to the inertia of the fluid and the other due to friction with the walls.
+
+\section{Methods}
+In this work, we use a one-dimensional model to study how the mass flux changes during one period of Enceladus’ rotation. The novelty of our model is the rising and falling of the water level, together with its associated effects. \citeA{nakajima2016controlled} suggested a controlled boiling model, which describes a mechanism of the plume evaporating from the gas-liquid interface held near 273 K and the fluid dynamics of the gas and liquid in the crack (regions 2 and 4 in Fig. \ref{fig:enc:2}). Our work also solves the time-dependent heat equation for a thin layer (region 5) at the walls: As the water rises and the wall is covered by water, it absorbs heat by conduction, and when the water level falls and the wall is exposed, it releases heat by sublimation. The time-averaged net heat due to condensation on the walls is conducted through the ice in region 3 and ultimately radiated to space in region 1.
+\begin{figure}[hbt!]
+    \centering
+    \includegraphics[width=0.7\textwidth]{Figures/Figure_2.pdf}
+    \caption{Illustration of the problem. Different regions are denoted by numbers in the circles, while the interactions between regions are denoted by arrows.}
+    \label{fig:enc:2}
+\end{figure}
+
+We assume a sinusoidal time dependence of crack width, with a minimum at the phase of 0 degrees and a maximum at the phase of 180 degrees, as in Equation \ref{Eq: Enceladus-1}.
+
+\begin{equation}
+    \delta(t)=\delta_{min}\left(\frac{R_\delta+1}{2}-\frac{R_\delta-1}{2}\cos\frac{2\pi t}{P}\right)
+    \label{Eq: Enceladus-1},
+\end{equation}
+
+Here $t$ is the time where the model phase is at 0 degrees, $\delta(t)$ is the crack width, $\delta_{min}$ is the smallest width, and $R_\delta$ is the ratio of the maximum width to the smallest. $P$ is 33 hours, the period of Enceladus' rotation and revolution, being the same as it is tidally locked.
+\textbf{However, it may be more appropriate to use a double-cosine when considering tidally-heated processes as described in \citet{MeyerZuWestram2024} Meyer zu Westram et al. 2024. In this way, one can rewrite Eqn. \ref{Eq: Enceladus-1} with the identity:} \[
+\cos\phi = \frac{4}{3}\cos\phi - \frac{1}{3}\cos 2\phi + \frac{1}{3}
+\]
+
+\textbf{so that: }
+
+\begin{equation}
+\delta(t) = \delta_{\min} \left( \frac{R_\delta + 1}{3} - \frac{2(R_\delta-1)}{3} \cos\frac{2\pi t}{P} + \frac{R_\delta-1}{6} \cos\frac{4\pi t}{P} \right)
+\end{equation}
+
+
+
+
+In Fig. \ref{fig:enc:1}, $L$ is the equilibrium depth of the liquid water column, $h$ is the water level height above the neutral water level, $D$ is the instantaneous depth of the water level, and the height $z$ is set to be zero at the bottom of the crack (where it connects to an ocean) and increases upwards. With the walls widening and narrowing, the liquid water moves vertically, and its velocity is a function of both time and height, $v=v(z,t)$. For convenience, we denote the velocities at the entrance of the crack and the gas-liquid interface as $v_0=v(0,t)$ and $v_h=v(h+L,t)$, respectively.
+
+\subsection{Fluid dynamics of the liquid}
+In this part of the model, the two dependent variables are the velocity of the water $v_0$ at the entrance of the crack and the water level height $h$. These variables are functions of time and are solved from equations of continuity and momentum. Inertial, gravitational, and frictional forces are applied to the liquid water column.
+
+The velocities at other locations are calculated from continuity by
+\begin{equation}
+    v(z,t)=v_0(t)-\frac{1}{\delta}\frac{d\delta}{dt}z, 0\leq z \leq h+L.
+    \label{Eq: Enceladus-2}
+\end{equation}
+
+The time derivative of the entrance velocity is calculated from the momentum equation
+\begin{equation}
+    \rho_w \delta \frac{\partial v}{\partial t} = -\rho_w \delta v \frac{\partial v}{\partial z} - \delta \frac{\partial p}{\partial z} - \delta \rho_w g - f \hat{v},
+    \label{Eq: Enceladus-3}
+\end{equation}
+
+Here $g=0.113$ m$^2$s$^{-1}$ is the gravitational acceleration, $f$ is the magnitude of the friction force, and $\hat{v}$ is the sign of the velocity. The time derivative of the entrance velocity at the base of the crack is calculated by substituting Equation \ref{Eq: Enceladus-2} into Equation \ref{Eq: Enceladus-3} and integrating from $z = 0$ to $z = h + L$, assuming that the bottom of the crack has a fixed hydrostatic pressure of $gL$:
+\begin{equation}
+    \frac{dv_0}{dt} = \frac{1}{h+L} \left[ -\frac{1}{2} \left( v_h^2 - v_0^2 \right) 
+- \frac{1}{2} \left[ \left( \frac{d\delta}{dt} \right)^2 \frac{1}{\delta^2} - \frac{d^2\delta}{dt^2} \frac{1}{\delta} \right] 
+- gh - \int_0^{h+L} \frac{2C_f}{\delta} v^2 \hat{v} \, dz \right].
+\label{Eq: Enceladus-4}
+\end{equation}
+Here $v_h$ is the velocity at the top of the liquid, or the velocity at $z=h+L$. The first two terms on the right-hand side of Equation \ref{Eq: Enceladus-4} are from the advection term in Equation \ref{Eq: Enceladus-3}; the third term is from the gravitational force; and the last term is from the friction force with the two walls. The magnitude of the frictional stress on each wall is calculated as
+\begin{equation}
+    f=C_f\rho_w v^2,
+\end{equation}
+
+where $\rho_w=1000$ kg/m$^3$ is the density of liquid water, and $C_f=0.002$ is the frictional coefficient in the walls (Following from \citeA{ingersoll2010subsurface,arya2001introduction}). The appearance of $\hat{v}$ in Equations \ref{Eq: Enceladus-3} and \ref{Eq: Enceladus-4} shows that the direction of the friction force is opposite to the local velocity direction as given in Equation \ref{Eq: Enceladus-1}. For the smallest width considered in this work, the effect of surface tension is 4 orders of magnitude smaller than the gravitational effect of a 1-meter thick water column and hence is not considered in Equation \ref{Eq: Enceladus-4}.
+
+The time derivative of $h$ is the velocity at location $h+L$ and is obtained from Equation \ref{Eq: Enceladus-2}
+
+\begin{equation}
+    \frac{dh}{dt} = v(h+L,t) = v_0 - \frac{h+L}{\delta} \frac{d\delta}{dt}.
+\label{Eq: Enceladus-6}
+\end{equation}
+
+Equations \ref{Eq: Enceladus-4} and \ref{Eq: Enceladus-6} are the non-linear, time-dependent equations for the dependent variables $v_0(t)$ and $h(t)$. Detailed derivations can be found in Supporting Information.
+
+\begin{equation}
+    \frac{dM}{M} (1 - M^2) \left( 1 + \frac{\gamma - 1}{2} M^2 \right)^{-1} = \left( \frac{E}{\rho v \delta} + \frac{\gamma C_f}{2\delta} M^2 \right) dz.
+\end{equation}
+
+\subsection{Heat storage and evaporation}
+The heat transfer in the thin layer of the wall (region 5) is controlled by two processes: heat conduction (region 3) and sublimation/condensation of the water vapor (region 2). The two processes differ greatly in their characteristic time scale. Region 5 serves as a thermal conduction layer that connects the two parts of the model. It has a thickness of 1 meter, which is several times the thermal skin depth corresponding to the time of a diurnal cycle ($\sim$0.33 m). This thickness allows us to resolve most of the variabilities associated with a diurnal cycle.
+
+A section of the wall is covered for part of the diurnal cycle, and the wall absorbs heat from the water when it is submerged. When the water level falls, these sections of the wall are exposed and the water vapor either evaporates from or condenses onto the exposed walls. The sublimation rate (negative if condensation) per unit area of an exposed wall is calculated as
+\begin{equation}
+    E(z,t) = \frac{p_w(z,t) - p_g(t)}{\sqrt{2\pi R T_w(z,t)}},
+\end{equation}
+Where $p_g(t)$ is the pressure of the gas at region 2 at time $t$, $p_w(z,t)$ is the saturated vapor pressure for the wall at height $z$ and time $t$, and $T_w(z,t)$ is the temperature of the wall at height
+$z$ and time $t$.
+
+We name the two boundaries of the thermal layer (region 5) as the sublimation-side boundary (interface with regions 2 and 4) and conduction-side boundary (interface with region 3), respectively. The evaporation-side boundary of the shallow layer is set to have a temperature gradient pertinent to the rate of condensation or sublimation at the wall surface.
+
+The saturated vapor pressure is obtained to a good approximation from $p_w=A\exp\left(-B/T_w\right)$ where $A=3.63\times 10^{12}$ Pa and $B=6147$ K \cite{nakajima2016controlled}.
+
+At the surface (region 1), the heat release is controlled by blackbody radiation, and within the ice crust (region 3) steady-state heat conduction happens \cite{ingersoll2010subsurface}, as in Equation
+\ref{Eq: Enceladus-8}. Here $T_s(d)$ is the temperature of the surface with a horizontal distance $d$ from the crack, and $\lambda$ is the thickness of the thermal layer, or region 5. The conduction-side boundary of the thermal layer is set to match the steady-state heat conduction in region 3 at the boundary with region 5.
+
+\begin{eqnarray}
+    F_c = 4k \frac{T_s(d) - T(z,\lambda,t)}{\pi d}.
+\label{Eq: Enceladus-8}
+\end{eqnarray}
+
+Eaccrack has two walls, one on either side. Details of the heat transfer are shown in Supporting Information.
+
+\subsection{Fluid dynamics of the gas}
+The gas dynamics (region 2) are described by a model that is similar to that in \citeA{nakajima2016controlled}. However, the sublimation and condensation happening on the surface of the walls (region 5) are treated differently, as we are now solving a transient state. Similar to \citeA{nakajima2016controlled}, the flow is initialized with evaporation at the liquid surface and travels upwards. Besides the thermodynamic variables pressure and temperature, and the vertical velocity of the gas, we keep track of the Mach number by integrating from the gas-liquid interface to the exit of the crack:
+\begin{equation}
+    \frac{dM}{M} (1 - M^2) \left( 1 + \frac{\gamma - 1}{2} M^2 \right)^{-1} = \left( \frac{E}{\rho v \delta} + \frac{\gamma C_f}{2\delta} M^2 \right) dz
+    \label{Eq: Enceladus-9}.
+\end{equation}
+Noticeably, the Mach number condition $M=1$ at the exit is the physical limit of the compressible flow in a frictional duct, which is the physical constraint used in \citeA{nakajima2016controlled}. However, from Equation \ref{Eq: Enceladus-9}, we note that in the presence of mass removal ($E<0$), the Mach number is allowed to exceed 1. Hence, we use a different exit boundary condition here.
+
+According to \citeA{dong2011water}, the best-fit exit Mach number of the plume is 1.4-1.8. The slight difference could be due to the expansion and acceleration near the exit of the crack. Also, we confirmed with simulations that the boundary mach number has a minimal effect on the mass flux in the range of 1.4-1.8. Hence, we use $M=1.6$ here as the exit condition. Also, most of the conclusions in \citeA{nakajima2016controlled} still hold: having Mach numbers of 1.4 or 1.8 as the exit condition creates a total mass flux difference of no more than 2\% for shell thickness of 5 km and 5\% for shell thickness of 20 km. The details of the derivation of Equation \ref{Eq: Enceladus-9} can be found in Supporting Information. 
+
+Different parts are assembled into a full model. The rising of falling of water level is solved first, which is used for calculation of the mass flux. To model the variability of the mass flux, we need to solve for the flow of water vapor. The water level is evaporative, creating a flow in the crack, but the mass flux and the speed of the initiated flow depends on the initial water vapor back pressure $p_b$ just above the water level. The flow accelerates and exchanges mass with the walls, and the value of $p_b$ is iteratively selected to match the condition that $M=1.6$ at the exit. The model is run for about 100 days on Enceladus until the diurnal oscillations in the thermal layer stabilize. 
+
+\section{Results}
+To explore the effects of each parameter, we conducted simulations on a parameter grid. The three controlling parameters are the equilibrium water column depth $L$, the minimum width $\delta_{min}$ and the ratio of the maximum width to the minimum width $R_{\delta}$ The selections of the parameters are specified in Table \ref{tbl:enc:model_parameters}. For the choices of minimum width values, we selected a wide range ranging from centimeters suggested by \citeA{nakajima2016controlled} to a meter suggested by \citeA{kite2016sustained}. Note that in this paper, not all model results from the parameter values chosen are shown. The mass flux results are displayed in a range where the secondary peaks are pertinent. 
+
+\begin{table}[hbt!]
+    \centering
+    \begin{tabular}{l l}
+        \hline
+        \textbf{Parameter} & \textbf{Choices of values} \\
+        \hline
+        Equilibrium water depth $L$ & 5 km, 10 km, and 20 km \\
+        Minimum width $\delta_{min}$ & 1 mm, 2 mm, 5 mm, 1 cm, 5 cm, 20 cm, 50 cm, 1 m \\
+        Width ratio $R_\delta$ & 1.05, 1.0, 1.15, 1.2, 1.3, 1.5, 2.0, 3.0, 5.0 \\
+        \hline
+    \end{tabular}
+    \caption{Parameters selected for model simulations.}
+    \label{tbl:enc:model_parameters}
+\end{table}
+
+We first study the results of water level variation, The results of mass flux variation are shown in the subsection after that. Since the water level variation contributes to the variability of the mass flux, a better understanding of the water level variation helps to explain the mass flux variation. 
+
+\subsection{Water level variation}
+We explore parameter space with a grid. In Fig. \ref{fig:enc:3}, several typical cases are selected to demonstrate the effects of different parameters, where the water levels and entrance velocities at the bottom of the crack are examined.
+
+\begin{figure}[hbt!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{Figures/Figure_3.pdf}
+    \caption{Water level and entrance velocity variations over a diurnal cycle. The left figures compare the effects of different minimum widths, while the right figures compare the effects of different width ratios and different depths. }
+    \label{fig:enc:3}
+\end{figure}
+
+In Fig. \ref{fig:enc:3}, it is apparent that the shapes of the curves are similar across different sets of simulations. The diurnal cycle can be decomposed into two phases based on the wall behavior: the expanding phase (MA 0~180 degrees) and the squeezing phase (MA 180~360 degrees). The two phases have nearly symmetric behaviors: in the expanding phase, the water level first drops due to continuity, but returns to the equilibrium level with water entering the crack driven by gravitational forces when the water level is low. On the contrary, during the squeezing phase, the water rises and then falls when water flows out from the crack when the water level is high.
+
+The left column of Fig. \ref{fig:enc:3} demonstrates the effect of different widths. The diurnal patterns for all cases follow a similar shape: the water table drops to a low level when the walls are expanding and rises to its highest level when the walls are squeezing. The width $\delta_{min}$ has a large effect on the water level. Smaller widths have a larger frictional effect and produce a more drastic water level change. The width has only a small effect on the entrance velocity, which is forced by continuity to maintain the liquid water column inside the crack. The variation of water level is small for most cases, as the maximum variation of the total water column length is 10\% before it overflows. This makes the relative rate of width variation $R_{\delta}$ and the water column depth $L$ the only important factors in calculating the velocity of water at the bottom of the crack.
+
+\begin{figure}[hbt!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{Figures/Figure_4.pdf}
+    \caption{Details of a sample run, with a minimum width of 5 cm, width ratio of 1.30, and depth of 5 km: (a) The dissipation flux distribution over height and time, (b) The pressure difference distribution, compared to hydrostatic pressure, over height and time.
+}
+    \label{fig:enc:4}
+\end{figure}
+
+In Fig. \ref{fig:enc:4}, the more detailed structure of a typical simulation is shown. The scenario selected here has $\delta_{min} = 5 \, \text{cm}$, $R_\delta = 1.3$, and $L = 20 \, \text{km}$.
+
+In Fig. \ref{fig:enc:4}a, the heat flux due to friction dissipation with the wall is examined. We first note that the heat flux is small: the order of magnitude of total heat dissipation is 1 MW, which is far smaller than the measured surface heat flux of 5.8 GW \cite{abramov2009endogenic}. Another observation is that the heat fluxes are concentrated at the bottom, and when the rate of width change is largest. Large amounts of water enter or leave the crack during these periods to preserve the water column. A similar structure as the dissipation profile is observed in Fig. \ref{fig:enc:4}b, the pressure anomaly. This is because they are both proportional to powers of velocity. 
+
+It is possible to find an approximate expression of the total dissipation by calculating the velocity required to keep the water level at a constant value. The numerically calculated values and the analytically approximated values are qualitatively agreeing, with a small discrepancy in the phase. This indicates that the water level height is not important in the liquid motion and energy budget calculations, which justifies the approach by \citeA{kite2016sustained} that water level change is not taken into account in computing the dissipation. 
+
+\begin{figure}[hbt!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{Figures/Figure_5.pdf}
+    \caption{The contour of four important quantities with different width ratios and minimum widths, for a depth of 5 km: (a) Average total dissipation power, (b) Maximum water level above equilibrium that is reached (Note that the surface is 500 m from the water), (c) The phase when the maximum water level is reached, (d) The phase when maximum dissipation is reached. 
+}
+    \label{fig:enc:5}
+\end{figure}
+
+The right column of Fig. \ref{fig:enc:5}, on the other hand, shows the effects of different depths and width ratios. A deeper water column and a larger width ratio can increase the fluctuations, and the increase scales more than linearly. Moreover, the time when the water levels reach maximum shifts for different scenarios. The influence of the parameters is better presented in contour plots in Fig. \ref{fig:enc:5}. In Fig. \ref{fig:enc:5}, the grid is mapped upon a water column depth of 5 km. For other water column depth choices, the pattern is similar. In Fig. \ref{fig:enc:5}a, the average total dissipation power is shown to be a strong function of width ratios only, which agrees with the previous discussions. In addition, the dissipation is orders of magnitude smaller than the total heat radiated from the surface even for large width ratios, suggesting that the liquid motion in the crack does not contribute much to the global heat budget. However, if we use an ice shell thickness of 20 km and use a width ratio larger than 5, the conclusion is reversed, and the liquid supplies an amount of energy of the same order as the global budget, similar to \citeA{kite2016sustained}. We have shown an analytical expression of the instant dissipation power in Supporting Information, suggesting that the dissipation power is proportional to the fourth order of the layer thickness and that thickness is an important factor in determining the source of heat emission emanating from the south pole of Enceladus. 
+
+In Fig. \ref{fig:enc:5}b, the trend is observed again that both decreasing the crack width and increasing the width ratio led to larger water level fluctuations. An analytically estimated peak frictional
+pressure can explain the pattern shown in Fig. \ref{fig:enc:5}b. The velocity scales as $(1/\delta)(d\delta/dt)$, and the
+frictional force $(1/\delta)^2(d\delta/dt)^2$. We note that $d\delta/dt$ scales with $\delta R_{\delta}$, and the height is proportional to the frictional force. With simple rearrangements, we find that the maximum water level height scales
+with $R_\delta^2 \delta^{-1}$. This scaling relation agrees well with the model results in Fig. \ref{fig:enc:5}b.
+
+The phases where the water level reach maximum are important for the timing of the geyser activities. According to \citeA{nakajima2016controlled}, the vapor mass flux is increased when the water level gets closer to the surface. The mean anomalies of maximum level and maximum dissipation are mapped in Figures 5 (c) and (d). The timing of the maximum water level is 270 degrees, which agrees with the timing for maximum squeezing velocity. With larger width ratios, the water level increase can accumulate in the crack while the gravitational effect forcing the water to exit the crack is retarded, thus delaying the phase where the maximum water level is reached.
+
+\begin{figure}[hbt!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{Figures/Figure_6.pdf}
+    \caption{Comparisons of water levels over a diurnal cycle with scenarios with different tapering structures. For tapered scenarios, the minimum width is specified at the equilibrium water level. “Opening” is the scenario where the width of the crack is larger at higher levels, and the crack would have shut at 1 km below the crack entrance. “Tapering off” is the scenario where the width of the crack is smaller at higher levels, and the crack would have shut at 1 km above the surface of Enceladus. 
+}
+    \label{fig:enc:6}
+\end{figure}
+
+Besides the configuration of a straight crack, we have considered the effects of tapering, as shown in Fig. \ref{fig:enc:6}. The most noteworthy conclusion here is that the pattern is unchanged even if tapering is considered. We note that an opening crack has a larger variation than a straight crack and vice versa. As a possible cause of this behavior, the opening crack has a smaller width at its entrance, so the velocity has to be larger when the walls are narrowing and widening, thus increasing the frictional effects. We did not explore further the effects of tapering, since the degree of freedom of tapering is too large, both in its form of tapering and whether the rate of the width change is uniform. 
+
+\subsection{Mass flux calculation and secondary peaks}
+Coupling the water level variation with other parts of the physics, as shown in Fig. \ref{fig:enc:2}, the mass flux could be calculated. We found that there are mainly 5 types of behavior of the diurnal variability of the mass flux. In particular, two of them show a secondary peak --- an additional local maximum other than the main peak. We name the two types of secondary peaks type 1 and type 2, both of which are shown in Fig. \ref{fig:enc:7}. Type 1 secondary peaks happen after perijove when the water level is dropping and large areas of the wall are exposed. The walls cool down fast due to sublimation, so the mass flux is positively related to the rate at which the walls are exposed. Type 2 secondary peaks happen after apojove when the water level is close to the surface of Enceladus, usually when the depth is small and the max-min width ratio is large. 
+
+\begin{figure}[hbt!]
+    \centering
+    \includegraphics[width=0.6\textwidth]{Figures/Figure_7.pdf}
+    \caption{Examples of type 1 (left) and type 2 (right) secondary peaks. Note that the black curves use left y-axes, and the blue curvhe right y-axes. 
+}
+    \label{fig:enc:7}
+\end{figure}
+
+Fig. \ref{fig:enc:7} also suggests that even if the secondary peaks are of the same type, the patterns of diurnal variability, and the orders of magnitude of the mass flux, could be very different. With different parameters, the relative importance of each of the processes varies, and the patterns shift from one paradigm to another. Fig. \ref{fig:enc:8} summarizes when the 5 different types of mass flux behaviors happen. Ranked from lower to higher max-min width ratios, the behaviors are classified as: no main peak, where the width change is small and the main peak mechanism due to widening of the crack is dominated by the emission from heat storage from the walls; type 1 secondary peak, where evaporation from the walls is important, no secondary peak, where the effects of crack widening dominate; type 2 secondary peak, where the liquid is close to the surface; and overflow, when the water level goes above the exit of the crack. As the effects of overflow have a strong dependence on the geometries near the exit of the crack, we are not calculating mass fluxes for overflow scenarios in this paper.
+
+\begin{figure}[hbt!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{Figures/Figure_8.pdf}
+    \caption{Contour map of the five types of mass flux behaviors over different minimum widths and different width ratios, over three depths. The boundaries between different types are drawn in the figures with dashed lines. 
+}
+    \label{fig:enc:8}
+\end{figure}
+
+From Fig. \ref{fig:enc:8}, by comparing contour patterns for the three depths shown, the trend in which the regions of different types of peaks shift is found. Firstly, as expected, the type 2 secondary peak always happens just before the forcing becomes strong enough to give overflow. We find that the lower boundary of overflow scenarios shifts to lower width ratios for larger depths. This is explained by friction. Without friction, with a narrowing crack, the velocity at which the liquid water exits from the bottom is found as
+\begin{equation}
+    v_0=\frac{L}{\delta}\frac{d\delta}{dt}.
+\end{equation}
+However, the frictional force counteracts the tendency of flow exit, and the excess mass trapped
+325 in the crack accumulates as an elevated water level. For larger water column depths $L$, the
+frictional effect is stronger, as $F_{fric}\propto v^2\propto L^4$. Hence, overflow is more easily achieved at larger depths.
+
+For type 1 secondary peaks, it is observed that the region where the type 1 secondary peak happens expands to larger minimum widths for larger depths. As type 1 secondary peaks are due to heat storage in the shallow layer of the walls, their relative significance decreases when the widths are larger. However, for larger depths, the change in water levels is larger, so more warm walls are exposed in the expanding phase, the type 1 secondary peaks would still be visible at larger minimum widths.
+
+One important observation is that the range of parameters that permit the occurrence of type 1 secondary peaks is small. We shall note that this does not rule out possibilities of larger width cracks and different width ratios, since the actual scenario can defer from the observations here. For example, the deformation is not likely uniform throughout the crack, and the interactions between tiger stripes may change the patterns of the wall motions. 
+
+\begin{figure}[hbt!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{Figures/Figure_9.pdf}
+    \caption{ Contour map of maximum total mass flux (first row) and average total mass flux (second row). The units are all kg/s.
+}
+    \label{fig:enc:9}
+\end{figure}
+
+In Fig. \ref{fig:enc:9}, we show the contour map of mass flux. Even if for larger depths, the equilibrium water level is farther from the surface, due to the larger water level change and heat storage in the wall thermal layer, both the maximum mass fluxes and the average mass fluxes are of the same order of magnitude. In general, the trend is that a larger minimum width and a larger width ratio lead to higher mass fluxes. However, at minimum width values of around 2-4 mm, a violation of this trend is observed. This zone represents the region where the crack opening is small to have a large water level change and a source close to the surface, but not too small to inhibit the vapor exiting the cracks.
+
+By searching the parameter space, we find that the type 1 secondary peaks are located at the same phase as where the secondary peaks are observed, and one case provides a nice fit to the diurnal variability patterns. The simulated mass flux is plotted in Fig. \ref{fig:enc:10} with the slab density variations calculated from observations \cite{ingersoll2020time}. Note that the slab density measures the amount of small condensed ice particles, calculated from the apparent brightness of the plumes.
+
+\begin{figure}[hbt!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{Figures/Figure_10.pdf}
+    \caption{A comparison between the mass flux variation patterns and the slab density variation patterns is shown in Fig. \ref{fig:enc:1} \cite{ingersoll2020time}. Model (total) shows the total mass flux, and model (water) shows the contribution of the flux from the liquid evaporation. The model here has a depth of 20 km, minimum width of 5 mm, and a width ratio of 1.10. Note that the data are placed in accordance with mean anomaly, which does not necessarily agree with the phase of width change.
+}
+    \label{fig:enc:10}
+\end{figure}
+
+In Fig. \ref{fig:enc:10}, together with the total mass flux, we show the contribution of the liquid evaporation. Near the time of secondary peak, there is a decrease in the evaporation rate from the liquid, which is the consequence of increased wall sublimation. When a higher wall sublimation mass flux, the increased velocity of gas in the crack would increase the integrated frictional pressure on the walls. Thus, the liquid evaporation is suppressed by a higher back pressure. This effect damps the magnitude of the secondary peaks.
+
+In this paper, we have not modeled the part that relates slab density to the mass flux from the crack. However, the existence of a positive correlation is clear \cite{ingersoll2020time}, which means this model successfully provides a possible mechanism that describes the activities of the plumes. The rate of drop of water level peaks near the phase of 50 degrees, exposing a large area of warm walls that evaporate to give a large mass flux but quickly decays over time, thus producing a secondary peak. After that, the variability of mass flux is taken over by the widening of the crack, and the main peak appears at around the phase of 190 degrees. A slight delay of the peak is observed, and this is because the water level is rising since the cracks stop widening and start to narrow. The optimal timing that maximizes the two effects that contribute to a mass flux peak (wide crack and close approach to the surface) is then not at precisely phase 180 degrees. 
+
+\section{Conclusions}
+We modeled the activities of the plumes on Enceladus by considering the crack as a long fissure that has a constant width. The rising and falling of the water level have a strong correlation with the widening and narrowing rate of the walls, and we have shown that the diurnal variability of the mass flux qualitatively agrees with the observations, where the secondary peaks are either created by heat storage in a thermal layer in the walls or a close approach of water level to the surface.
+
+We noted that an active open crack is a more likely explanation of the observed variability than a closed one, as the warm walls are exposed only when the crack is open. Hence, the proposed model shows an additional evidence that the two-way mass exchange exists between the interior ocean and the planetary surface, which is important for the chemical energy sources for habitability \cite{parkinson2008habitability}.
+
+While some assumptions are made, the physical processes modeled would follow a similar pattern. Future work can consider a more realistic geometry and generalize the model beyond the current assumptions. Considering an irregular shape of the crack would be possible, but it allows too high a degree of freedom for explorations in the parameter space. Also, the narrowing and widening of the crack may follow a different pattern, where the geometries and viscoelasticity can play a role. 
+
+
+%%
+
+%  Numbered lines in equations:
+%  To add line numbers to lines in equations,
+%  \begin{linenomath*}
+%  \begin{equation}
+%  \end{equation}
+%  \end{linenomath*}
+
+
+
+%% Enter Figures and Tables near as possible to where they are first mentioned:
+%
+% DO NOT USE \psfrag or \subfigure commands.
+%
+% Figure captions go below the figure.
+% Acronyms used in figure captions will be spelled out in the final, published version.
+
+% Table titles go above tables;  other caption information
+%  should be placed in last line of the table, using
+% \multicolumn2l{$^a$ This is a table note.}
+% NOTE that there is no difference between table caption and table heading in the final, published version
+%
+%----------------
+% EXAMPLE FIGURES
+%
+% \begin{figure}
+% \includegraphics{example.png}
+% \caption{caption}
+% \end{figure}
+%
+% Giving latex a width will help it to scale the figure properly. A simple trick is to use \textwidth. Try this if large figures run off the side of the page.
+% \begin{figure}
+% \noindent\includegraphics[width=\textwidth]{anothersample.png}
+%\caption{caption}
+%\label{pngfiguresample}
+%\end{figure}
+%
+%
+% If you get an error about an unknown bounding box, try specifying the width and height of the figure with the natwidth and natheight options. This is common when trying to add a PDF figure without pdflatex.
+% \begin{figure}
+% \noindent\includegraphics[natwidth=800px,natheight=600px]{samplefigure.pdf}
+%\caption{caption}
+%\label{pdffiguresample}
+%\end{figure}
+%
+%
+% PDFLatex does not seem to be able to process EPS figures. You may want to try the epstopdf package.
+%
+
+%
+% ---------------
+% EXAMPLE TABLE
+%
+% \begin{table}
+% \caption{Time of the Transition Between Phase 1 and Phase 2$^{a}$}
+% \centering
+% \begin{tabular}{l c}
+% \hline
+%  Run  & Time (min)  \\
+% \hline
+%   $l1$  & 260   \\
+%   $l2$  & 300   \\
+%   $l3$  & 340   \\
+%   $h1$  & 270   \\
+%   $h2$  & 250   \\
+%   $h3$  & 380   \\
+%   $r1$  & 370   \\
+%   $r2$  & 390   \\
+% \hline
+% \multicolumn{2}{l}{$^{a}$Footnote text here.}
+% \end{tabular}
+% \end{table}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% SIDEWAYS FIGURES and TABLES
+% AGU prefers the use of {sidewaystable} over {landscapetable} as it causes fewer problems.
+%
+% \begin{sidewaysfigure}
+% \includegraphics[width=20pc]{figsamp}
+% \caption{caption here}
+% \label{newfig}
+% \end{sidewaysfigure}
+%
+%  \begin{sidewaystable}
+%  \caption{Caption here}
+% \label{tab:signif_gap_clos}
+%  \begin{tabular}{ccc}
+% one&two&three\\
+% four&five&six
+%  \end{tabular}
+%  \end{sidewaystable}
+
+%% If using numbered lines, please surround equations with \begin{linenomath*}...\end{linenomath*}
+%\begin{linenomath*}
+%\begin{equation}
+%y|{f} \sim g(m, \sigma),
+%\end{equation}
+%\end{linenomath*}
+
+%%% End of body of article
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Optional Appendices go here
+%
+% The \appendix command resets counters and redefines section heads
+%
+% After typing \appendix
+%
+%\section{Here Is Appendix Title}
+% will show
+% A: Here Is Appendix Title
+%
+%\appendix
+%\section{Here is a sample appendix}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Optional Glossary, Notation or Acronym section goes here:
+%
+% Glossary is only allowed in Reviews of Geophysics
+%  \begin{glossary}
+%  \term{Term}
+%   Term Definition here
+%  \term{Term}
+%   Term Definition here
+%  \term{Term}
+%   Term Definition here
+%  \end{glossary}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Acronyms
+%% NOTE that acronyms in the final published version will be spelled out when used in figure captions.
+%   \begin{acronyms}
+%   \acro{Acronym}
+%   Definition here
+%   \acro{EMOS}
+%   Ensemble model output statistics
+%   \acro{ECMWF}
+%   Centre for Medium-Range Weather Forecasts
+%   \end{acronyms}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Notation
+%   \begin{notation}
+%   \notation{$a+b$} Notation Definition here
+%   \notation{$e=mc^2$}
+%   Equation in German-born physicist Albert Einstein's theory of special
+%  relativity that showed that the increased relativistic mass ($m$) of a
+%  body comes from the energy of motion of the body—that is, its kinetic
+%  energy ($E$)—divided by the speed of light squared ($c^2$).
+%   \end{notation}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% DATA SECTION and ACKNOWLEDGMENTS
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section*{Open Research Section}
+This section MUST contain a statement that describes where the data supporting the conclusions can be obtained. Data cannot be listed as ''Available from authors'' or stored solely in supporting information. Citations to archived data should be included in your reference list. Wiley will publish it as a separate section on the paper’s page. Examples and complete information are here:
+https://www.agu.org/Publish with AGU/Publish/Author Resources/Data for Authors
+
+\section*{As Applicable – Inclusion in Global Research Statement}
+The Authorship: Inclusion in Global Research policy aims to promote greater equity and transparency in research collaborations. AGU Publications encourage research collaborations between regions, countries, and communities and expect authors to include their local collaborators as co-authors when they meet the AGU Publications authorship criteria (described here: https://www.agu.org/publications/authors/policies\#authorship). Those who do not meet the criteria should be included in the Acknowledgement section. We encourage researchers to consider recommendations from The TRUST CODE - A Global Code of Conduct for Equitable Research Partnerships (https://www.globalcodeofconduct.org/) when conducting and reporting their research, as applicable, and encourage authors to include a disclosure statement pertaining to the ethical and scientific considerations of their research collaborations in an “Inclusion in Global Research Statemstandalone section in the manuscript following the Conclusions section. This can include disclosure of permits, authorizations, permissions and/or any formal agreements with local communities or other authorities, additional acknowledgements of local help received, and/or description of end-users of the research. You can learn more about the policy in this editorial. Example statements can be found in the following published papers: 
+Holt et al. (https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2022JG007188), 
+Sánchez-Gutiérrez et al. (https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/2023JG007554), 
+Tully et al. (https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2022JG007128) 
+Please note that these statements are titled as “Global Research Collaboration Statements” from a previous pilot requirement in JGR Biogeosciences. The pilot has ended and statements should now be titled “Inclusion in Global Research Statement”.
+
+\section*{Conflict of Interest declaration}
+Please include a comprehensive conflict of interest statement that reflect all conflicts of interest for all involved authors. If there are no conflicts of interest please state, “The authors declare there are no conflicts of interest for this manuscript.”
+
+
+
+\acknowledgments
+Enter acknowledgments here. This section is to acknowledge funding, thank colleagues, enter any secondary affiliations, and so on.
+
+
+\bibliography{enceladus}
+
+
+
+%Reference citation instructions and examples:
+%
+% Please use ONLY \cite and \citeA for reference citations.
+% \cite for parenthetical references
+% ...as shown in recent studies (Simpson et al., 2019)
+% \citeA for in-text citations
+% ...Simpson et al. (2019) have shown...
+%
+%
+%...as shown by \citeA{jskilby}.
+%...as shown by \citeA{lewin76}, \citeA{carson86}, \citeA{bartoldy02}, and \citeA{rinaldi03}.
+%...has been shown \cite{jskilbye}.
+%...has been shown \cite{lewin76,carson86,bartoldy02,rinaldi03}.
+%... \cite <i.e.>[]{lewin76,carson86,bartoldy02,rinaldi03}.
+%...has been shown by \cite <e.g.,>[and others]{lewin76}.
+%
+% apacite uses < > for prenotes and [ ] for postnotes
+% DO NOT use other cite commands (e.g., \citeA, \cite, \citeyear, \nocite, \citealp, etc.).
+%
+
+
+
+\end{document}
+
+
+
+More Information and Advice:
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  SECTION HEADS
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Capitalize the first letter of each word (except for
+% prepositions, conjunctions, and articles that are
+% three or fewer letters).
+
+% AGU follows standard outline style; therefore, there cannot be a section 1 without
+% a section 2, or a section 2.3.1 without a section 2.3.2.
+% Please make sure your section numbers are balanced.
+% ---------------
+% Level 1 head
+%
+% Use the \section{} command to identify level 1 heads;
+% type the appropriate head wording between the curly
+% brackets, as shown below.
+%
+%An example:
+%\section{Level 1 Head: Introduction}
+%
+% ---------------
+% Level 2 head
+%
+% Use the \subsection{} command to identify level 2 heads.
+%An example:
+%\subsection{Level 2 Head}
+%
+% ---------------
+% Level 3 head
+%
+% Use the \subsubsection{} command to identify level 3 heads
+%An example:
+%\subsubsection{Level 3 Head}
+%
+%---------------
+% Level 4 head
+%
+% Use the \subsubsubsection{} command to identify level 3 heads
+% An example:
+%\subsubsubsection{Level 4 Head} An example.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  IN-TEXT LISTS
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Do not use bulleted lists; enumerated lists are okay.
+% \begin{enumerate}em
+% \item
+% \end{enumerate}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  EQUATIONS
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Single-line equations are centered.
+% Equation arrays will appear left-aligned.
+
+Math coded inside display math mode \[ ...\]
+ will not be numbered, e.g.,:
+ \[ x^2=y^2 + z^2\]
+
+ Math coded inside \begin{equation} and \end{equation} will
+ be automatically numbered, e.g.,:
+ \begin{equation}
+ x^2=y^2 + z^2
+ \end{equation}
+
+
+% To create multiline equations, use the
+% \begin{eqnarray} and \end{eqnarray} environment
+% as demonstrated below.
+\begin{eqnarray}
+  x_{1} & = & (x - x_{0}) \cos \Theta \nonumber \\
+        && + (y - y_{0}) \sin \Theta  \nonumber \\
+  y_{1} & = & -(x - x_{0}) \sin \Theta \nonumber \\
+        && + (y - y_{0}) \cos \Theta.
+\end{eqnarray}
+
+%If you don't want an equation number, use the star form:
+%\begin{eqnarray*}...\end{eqnarray*}
+
+% Break each line at a sign of operation
+% (+, -, etc.) if possible, with the sign of operation
+% on the new line.
+
+% Indent second and subsequent lines to align with
+% the first character following the equal sign on the
+% first line.
+
+% Use an \hspace{} command to insert horizontal space
+% into your equation if necessary. Place an appropriate
+% unit of measure between the curly braces, e.g.
+% \hspace{1in}; you may have to experiment to achieve
+% the correct amount of space.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  EQUATION NUMBERING: COUNTER
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% You may change equation numbering by resetting
+% the equation counter or by explicitly numbering
+% an equation.
+
+% To explicitly number an equation, type \eqnum{}
+% (with the desired number between the brackets)
+% after the \begin{equation} or \begin{eqnarray}
+% command.  The \eqnum{} command will affect only
+% the equation it appears with; LaTeX will number
+% any equations appearing later in the manuscript
+% according to the equation counter.
+%
+
+% If you have a multiline equation that needs only
+% one equation number, use a \nonumber command in
+% front of the double backslashes (\\) as shown in
+% the multiline equation above.
+
+% If you are using line numbers, remember to surround
+% equations with \begin{linenomath*}...\end{linenomath*}
+
+%  To add line numbers to lines in equations:
+%  \begin{linenomath*}
+%  \begin{equation}
+%  \end{equation}
+%  \end{linenomath*}
+
+
+
+

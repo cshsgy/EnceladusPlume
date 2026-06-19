@@ -16,23 +16,38 @@ from scipy.ndimage import median_filter
 logger = logging.getLogger(__name__)
 
 
-def _clean_outliers(arr: np.ndarray, size: int = 3, threshold: float = 0.05) -> np.ndarray:
+def _clean_outliers(arr: np.ndarray, size: int = 3, threshold: float = 0.05,
+                    max_passes: int = 8) -> np.ndarray:
     """Replace isolated outlier points with median-filtered values.
 
     A point is an outlier if it deviates from the local median by more than
     *threshold* (absolute).  The median filter window is *size* along each
     spatial axis (width, depth) and 1 along the Tb axis (which typically
     has only 2 points).
+
+    The pass is **iterated** until no outliers remain (or *max_passes*). A
+    single pass leaves residual glitches where several bad points cluster (the
+    gas solver scatters near the choke boundary at small widths); each further
+    pass cleans points whose neighbours were themselves fixed, and the residual
+    converges to zero in a few passes.
     """
     kernel = [size, size, 1] if arr.ndim == 3 else size
-    med = median_filter(arr, size=kernel, mode="nearest")
-    bad = np.abs(arr - med) > threshold
-    n_fixed = int(np.sum(bad))
-    if n_fixed > 0:
-        logger.info("  cleaned %d outlier(s) (%.2f%% of table)",
-                     n_fixed, 100 * n_fixed / arr.size)
     out = arr.copy()
-    out[bad] = med[bad]
+    first_frac = 0.0
+    passes = 0
+    for passes in range(1, max_passes + 1):
+        med = median_filter(out, size=kernel, mode="nearest")
+        bad = np.abs(out - med) > threshold
+        n_bad = int(np.sum(bad))
+        if passes == 1:
+            first_frac = 100.0 * n_bad / arr.size
+        if n_bad == 0:
+            passes -= 1
+            break
+        out[bad] = med[bad]
+    if first_frac > 0:
+        logger.info("  cleaned outliers (%.2f%% initially, converged in %d pass(es))",
+                     first_frac, passes)
     return out
 
 

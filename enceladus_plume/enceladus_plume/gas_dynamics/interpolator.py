@@ -13,6 +13,7 @@ from typing import Optional
 import numpy as np
 from joblib import Parallel, delayed
 
+from .._native import HAVE_NATIVE, CORE
 from ..friction import fanning_friction_factor
 from ..physics import (
     vapor_pressure,
@@ -171,7 +172,14 @@ def solve_r_function(
 
 
 def _solve_single(delta_val, depth_val, Tb_val):
-    """Helper for parallel map."""
+    """Helper for parallel map.
+
+    Uses the C++ core when available (re-imported in each joblib worker),
+    otherwise the pure-Python :func:`solve_r_function`. Both are numerically
+    equivalent.
+    """
+    if HAVE_NATIVE:
+        return tuple(CORE.solve_r_function(Tb_val, depth_val, delta_val))
     return solve_r_function(Tb_val, depth_val, delta_val)
 
 

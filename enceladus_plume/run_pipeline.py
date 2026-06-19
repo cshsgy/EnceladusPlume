@@ -220,7 +220,7 @@ def main():
         np.savez(
             case_path,
             wmin=wmin, wmaxmin=wmaxmin,
-            t=res["t_rec"], h=res["h_rec"], w=res["w_rec"],
+            t=res["t_rec"], h=res["h_rec"], w=res["w_rec"], v=res["v_rec"],
             depth=res["depth_rec"],
             r=r_arr, phi_top=phi_arr, rho_top=rho_arr, phi0=phi0_arr,
             gas_mass_flux=gas_mass_flux,

@@ -3,11 +3,23 @@
 *.zip
 *.txt
 *.pyc
+!requirements.txt
 
 .vscode/
 
 *.npz
 *.pkl
+
+# Python build / cache
+__pycache__/
+*.egg-info/
+build/
+dist/
+
+# C++ build artifacts
+cpp/build/
+*.so
+*.o
 
 # Local caches
 .cache/
