@@ -33,14 +33,14 @@ struct RResult {
 };
 
 namespace detail {
-constexpr double RG = 8.341 / 0.018;
+constexpr double RG = 8.314 / 0.018;
 constexpr double SIGMA = 5.67e-8;
 }  // namespace detail
 
 // Integrate the gas column for a given (Tb, depth, width, r).
 inline GasColumnResult solve_function(
     double Tb, double depth, double width, double r, double kt = 2.4,
-    double lv = 2.8e6, double g = 0.113, double Te = 68.0,
+    double lv = 2.84e6, double g = 0.113, double Te = 68.0,
     double dz_step = 0.1, const std::string& friction_model = "constant",
     double Cf_constant = 0.002, double mu_vapor = 8.0e-6,
     double roughness = 0.0, double C_lam = 96.0) {

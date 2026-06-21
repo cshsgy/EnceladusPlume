@@ -18,13 +18,13 @@ import yaml
 class PhysicalParams:
     gravity: float = 0.113
     thermal_diffusivity: float = 1.0e-6
-    thermal_conductivity: float = 3.0
+    thermal_conductivity: float = 2.4  # consistent with gas/wall-budget kt
     latent_heat: float = 2.84e6
     latent_heat_fusion: float = 3.34e5
     effective_surface_temp: float = 68.0
     orbital_period: float = 118800.0
     equilibrium_depth: float = 20000.0
-    gas_constant_vapor: float = 8.341 / 0.018
+    gas_constant_vapor: float = 8.314 / 0.018
     stefan_boltzmann: float = 5.67e-8
     water_temperature: float = 273.15
     liquid_density: float = 1000.0

@@ -26,7 +26,16 @@ flagged below (two are clear bugs, two need an author decision).
 | **Thermal conductivity `k`** | **2.4 (gas/budget) / 3.0 (full)** | **ice ≈ 2.4–3.3** | **DECISION (inconsistent)** |
 | **Wall friction `C_f` / model** | **churchill (var.); const 0.004 liquid / 0.002 gas** | **paper: const 0.002** | **DECISION (paper mismatch)** |
 
-## Issues
+## Resolution (2026-06)
+
+- **#1 FIXED** — `8.341 → 8.314` in `config.py`, `interpolator.py`, `gas_dynamics/solver.py`, `wall_budget.py`, and `cpp/.../gas.hpp` (rebuilt). Native parity holds.
+- **#2 FIXED** — gas-solver `lv` default `2.8e6 → 2.84e6` (`interpolator.py`, `gas.hpp`, `bindings.cpp`); now consistent with config everywhere.
+- **#3 FIXED** — `config.thermal_conductivity 3.0 → 2.4`, matching the gas/wall-budget `k`.
+- **#4 RESOLVED (paper updated)** — the liquid friction *is* Churchill (the code default); the Methods text was rewritten to describe the Churchill (1977) Reynolds-dependent `C_f` instead of a constant `0.002`. **Still open:** the *gas-column* lookup is built with a constant `C_f=0.002` (the gas solver's default `friction_model="constant"`), not Churchill — switch it too if gas friction should also be Reynolds-dependent (rebuilds the lookup, shifts gas/peak amplitudes).
+
+Affected figure `peak_predictor.pdf` was regenerated (gas lookup depends on `R`, `L_v`); `wall_seal_regime.pdf` is pure-liquid and unaffected.
+
+## Issues (original)
 
 ### 1. Vapor gas constant: `8.341` should be `8.314`  *(clear typo, ~0.32%)*
 The universal gas constant is **8.314** J/(mol·K), not 8.341 — a digit

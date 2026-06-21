@@ -56,7 +56,7 @@ from .physics import (
 )
 
 # Gas-column constants, matching gas_dynamics/interpolator.py.
-_RG = 8.341 / 0.018
+_RG = 8.314 / 0.018
 _SIGMA = 5.67e-8
 _KT = 2.4
 _TE = 68.0

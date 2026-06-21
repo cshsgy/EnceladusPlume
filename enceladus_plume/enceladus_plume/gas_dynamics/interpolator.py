@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Constants (matching solve_function.m)
 # ---------------------------------------------------------------------------
-_RG = 8.341 / 0.018
+_RG = 8.314 / 0.018
 _SIGMA = 5.67e-8
 
 
@@ -36,7 +36,7 @@ def _solve_function(
     width: float,
     r: float,
     kt: float = 2.4,
-    lv: float = 2.8e6,
+    lv: float = 2.84e6,
     g: float = 0.113,
     Te: float = 68.0,
     dz_step: float = 0.1,

@@ -80,7 +80,7 @@ PYBIND11_MODULE(_enceladus_core, m) {
                                   s.phi_top, s.rho_top, s.phi0);
         },
         py::arg("Tb"), py::arg("depth"), py::arg("width"), py::arg("r"),
-        py::arg("kt") = 2.4, py::arg("lv") = 2.8e6, py::arg("g") = 0.113,
+        py::arg("kt") = 2.4, py::arg("lv") = 2.84e6, py::arg("g") = 0.113,
         py::arg("Te") = 68.0, py::arg("dz_step") = 0.1,
         py::arg("friction_model") = "constant", py::arg("Cf_constant") = 0.002,
         py::arg("mu_vapor") = 8.0e-6, py::arg("roughness") = 0.0,
