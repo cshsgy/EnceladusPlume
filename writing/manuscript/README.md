@@ -7,16 +7,17 @@ Built with the AGU journal LaTeX template (`agujournal2019`). The entry point is
 [`main.tex`](main.tex), seeded from the previous draft (`../reference.tex`, also
 rendered in `../Enceladus_Draft.pdf`).
 
-## Required assets
+## Assets (in place)
 
-`main.tex` depends on a few files that are **not yet in this folder** and must be
-added before it will compile:
+The files needed to compile are now in this folder (from the original draft
+bundle):
 
 | Asset | Used by | Notes |
 |-------|---------|-------|
-| `agujournal2019.cls` (+ `apacite`, `agujournal2019.bst`) | `\documentclass` / bibliography | Ships with the [AGU LaTeX template](https://www.agu.org/publish-with-agu/publish/author-resources/latex). Drop the class/style files here or install them in your TeX tree. |
-| `enceladus.bib` | `\bibliography{enceladus}` | BibTeX database of the references cited in the draft. |
-| `Figures/Figure_1.pdf` … `Figures/Figure_10.pdf` | `\includegraphics` | The 10 figures. See `Figures/README.md`. |
+| `agujournal2019.cls`, `trackchanges.sty` | `\documentclass` / preamble | AGU class + track-changes package. `apacite` is provided by a standard TeX distribution. |
+| `enceladus.bib` | `\bibliography{enceladus}` | 31 references; covers every real citation in `main.tex`. |
+| `Figures/Figure_1.pdf`, `Figure_2.pdf` | `\includegraphics` | Observation + schematic (kept). Figures 3–10 of the first draft were removed (misused constants). |
+| `Figures/wall_seal_regime.pdf`, `peak_predictor.pdf` | `\includegraphics` | New figures generated from the solver. |
 
 ## Building
 
