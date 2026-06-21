@@ -1,0 +1,184 @@
+\documentclass[draft,jgrga]{agutexSI2019}
+
+\usepackage{url}
+\usepackage{amsmath}
+
+\begin{document}
+
+\title{Supporting Information for ``Aerosols in the vacuum: modelling the time variability of the plume of Enceladus''}
+
+\authors{=list all authors here=}
+\affiliation{=number=}{=Affiliation Address=}
+
+\correspondingauthor{=name=}{=email address=}
+
+\begin{article}
+
+\noindent\textbf{Contents of this file}
+\begin{enumerate}
+\item Text S1 to S3
+\end{enumerate}
+
+\noindent\textbf{Introduction}
+
+This Supporting Information collects the detailed derivations referenced in the
+main text: the depth-integrated momentum equation that governs the liquid column
+(Text S1), the energy balance of the thin wall thermal layer that sets the
+wall sublimation/condensation rate (Text S2), and the quasi-one-dimensional
+relation that governs the Mach number of the gas column (Text S3).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\noindent\textbf{Text S1. Depth-integrated momentum equation for the liquid column}
+
+We use a column coordinate $z$ running from the crack floor ($z=0$) to the
+gas--liquid interface ($z=h+L$), where $L$ is the equilibrium water-column depth
+and $h$ the displacement of the interface from equilibrium. The crack half-gap
+$\delta(t)$ is prescribed (tidal forcing); a dot denotes $d/dt$.
+
+\paragraph{Velocity profile from continuity.}
+For an incompressible column in a slot of uniform gap $\delta(t)$, volume
+conservation per unit crack length, $\partial\delta/\partial t +
+\partial(\delta v)/\partial z = 0$, integrates from the floor (where $v=v_0$) to
+\begin{equation}
+    v(z,t) = v_0(t) - \frac{\dot\delta}{\delta}\,z,
+    \qquad 0 \le z \le h+L,
+    \label{eq:si-vel}
+\end{equation}
+which is Equation~(2) of the main text. The velocity at the interface is
+$v_h \equiv v(h+L,t) = v_0 - (\dot\delta/\delta)(h+L)$, giving the kinematic
+condition $dh/dt = v_h$ (Equation~(6) of the main text).
+
+\paragraph{Pointwise momentum equation.}
+Dividing the momentum balance (Equation~(3) of the main text) by $\rho_w\delta$,
+\begin{equation}
+    \frac{\partial v}{\partial t}
+    = -\,v\frac{\partial v}{\partial z}
+      - \frac{1}{\rho_w}\frac{\partial p}{\partial z}
+      - g
+      - \frac{2 C_f}{\delta}\,v^2\hat v,
+    \label{eq:si-mom}
+\end{equation}
+where the last term is the friction of the two walls (stress $C_f\rho_w v^2$ on
+each, hydraulic factor $2/\delta$) and $\hat v=\mathrm{sgn}(v)$.
+
+\paragraph{Depth integration.}
+Integrate \eqref{eq:si-mom} from $z=0$ to $z=h+L$. The advective term gives
+\begin{equation}
+    \int_0^{h+L} v\,\frac{\partial v}{\partial z}\,dz
+    = \tfrac12\!\left(v_h^2 - v_0^2\right).
+\end{equation}
+The pressure term uses the two boundary conditions: a fixed hydrostatic pressure
+$p(0)=\rho_w g L$ at the floor and $p(h+L)=0$ at the free surface, so
+\begin{equation}
+    -\frac{1}{\rho_w}\int_0^{h+L}\frac{\partial p}{\partial z}\,dz
+    = -\frac{1}{\rho_w}\big[p(h+L)-p(0)\big] = gL,
+\end{equation}
+which combines with the gravity term $-g(h+L)$ to give $-gh$. Writing the
+friction integral as $F_{\rm fric}=\int_0^{h+L}(2C_f/\delta)v^2\hat v\,dz$, the
+right-hand side of the integrated equation is
+\begin{equation}
+    \int_0^{h+L}\frac{\partial v}{\partial t}\,dz
+    = -\tfrac12\!\left(v_h^2-v_0^2\right) - gh - F_{\rm fric}.
+    \label{eq:si-rhs}
+\end{equation}
+
+\paragraph{Left-hand side.}
+From \eqref{eq:si-vel}, the explicit time dependence of the profile is
+\begin{equation}
+    \frac{\partial v}{\partial t}
+    = \frac{dv_0}{dt}
+      - \frac{d}{dt}\!\left(\frac{\dot\delta}{\delta}\right) z
+    = \frac{dv_0}{dt}
+      + \left[\left(\frac{\dot\delta}{\delta}\right)^{\!2} - \frac{\ddot\delta}{\delta}\right] z ,
+\end{equation}
+using $\tfrac{d}{dt}(\dot\delta/\delta)=\ddot\delta/\delta-(\dot\delta/\delta)^2$.
+Integrating over the column,
+\begin{equation}
+    \int_0^{h+L}\frac{\partial v}{\partial t}\,dz
+    = (h+L)\,\frac{dv_0}{dt}
+      + \frac12\left[\left(\frac{\dot\delta}{\delta}\right)^{\!2} - \frac{\ddot\delta}{\delta}\right](h+L)^2 .
+    \label{eq:si-lhs}
+\end{equation}
+
+\paragraph{Result.}
+Equating \eqref{eq:si-lhs} and \eqref{eq:si-rhs} and solving for $dv_0/dt$,
+\begin{equation}
+    \frac{dv_0}{dt}
+    = \frac{1}{h+L}\left[
+      -\tfrac12\!\left(v_h^2-v_0^2\right)
+      - \tfrac12\!\left[\left(\frac{\dot\delta}{\delta}\right)^{\!2} - \frac{\ddot\delta}{\delta}\right](h+L)^2
+      - gh - \int_0^{h+L}\frac{2C_f}{\delta}v^2\hat v\,dz
+    \right],
+    \label{eq:si-dv0}
+\end{equation}
+which is Equation~(4) of the main text. The factor $(h+L)^2$ on the second
+(unsteady) term follows from the depth integration in \eqref{eq:si-lhs} and is
+required dimensionally; the advection term carries the sign $-\tfrac12(v_h^2-v_0^2)$.
+
+For a height-dependent gap $\delta(z,t)$ (a tapered crack), the same procedure
+applies with $v(z)=[\delta(z_0)v_0-\int_{z_0}^z\partial_t\delta\,dz']/\delta(z)$;
+the inertial pre-factor $(h+L)$ in \eqref{eq:si-dv0} is then replaced by
+$\int_0^{h+L}\delta(z_0)/\delta(z)\,dz$, and the unsteady term by the
+corresponding integral of the explicit profile time-dependence.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\noindent\textbf{Text S2. Energy balance of the wall thermal layer}
+
+The thin wall layer (region 5, thickness $\lambda\simeq1$~m, several diurnal
+skin depths) connects the in-crack heat exchange to the conductive interior.
+Its surface temperature $T_s$ at a point a distance $d$ below the crack mouth is
+set by balancing the radiative exchange with the cold sky and the conductive
+supply from the interior. Treating the surface as grey with the sky at the
+equilibrium temperature $T_e$ and the conductive flux from the interior
+(at base temperature $T_b$) over a path of order $d$ (Equation~(8) of the main
+text, $F_c = 4k\,[T_s-T_b]/(\pi d)$), the steady balance is
+\begin{equation}
+    2\sigma\!\left(T_s^4 - T_e^4\right) + \frac{4k}{\pi d}\left(T_s - T_b\right) = 0 ,
+    \label{eq:si-Ts}
+\end{equation}
+solved for the positive root $T_s(d)$ (a bisection in the code). The net
+sublimation rate per unit wall area follows from the surface energy released,
+\begin{equation}
+    E(d) = -\frac{\sigma}{L_v}\left(T_s^4 - T_e^4\right),
+    \label{eq:si-E}
+\end{equation}
+with $E<0$ denoting condensation. Two limits are instructive: near the mouth
+($d\to0$) the conduction term dominates, $T_s\to T_b$, and $|E|$ is largest
+(condensation concentrates within $\sim$one skin depth of the surface); deep in
+the crack ($d$ large) the conduction term vanishes, $T_s\to T_e$, and $E\to0$.
+
+When a wall element is instead submerged, it exchanges heat with the liquid by
+conduction across region~5; the time-dependent diffusion equation
+$\partial_t T = \kappa\,\partial_{zz}T$ is integrated in the layer with the
+sublimation-side boundary set by \eqref{eq:si-E} (when exposed) or by contact
+with the $\sim$273~K liquid (when submerged), and the conduction-side boundary
+matched to the steady interior profile of Equation~(8). The saturated vapour
+pressure entering the exposed-wall flux uses
+$p_w = A\exp(-B/T_w)$ with $A=3.63\times10^{12}$~Pa, $B=6147$~K.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\noindent\textbf{Text S3. Mach-number relation for the gas column}
+
+The vapour column (region~2) is modelled as quasi-one-dimensional, compressible,
+calorically perfect flow in a slot of gap $\delta$, subject to distributed mass
+addition from wall sublimation ($E$ per unit wall area) and wall friction
+($C_f$). Combining the differential forms of continuity, momentum, energy and
+the perfect-gas relation for such a flow (the influence-coefficient method),
+the Mach number $M$ evolves with height $z$ as
+\begin{equation}
+    \frac{dM}{M}\,\frac{1-M^2}{1+\frac{\gamma-1}{2}M^2}
+    = \left(\frac{E}{\rho v \delta} + \frac{\gamma C_f}{2\delta}M^2\right)dz ,
+    \label{eq:si-mach}
+\end{equation}
+which is Equation~(9) of the main text. The first source term is mass addition:
+$E/(\rho v\delta)$ is the fractional rate of mass injection per unit length from
+the two walls into the column of cross-section $\propto\delta$. The second is
+the Fanning wall friction, $(\gamma C_f/2\delta)M^2$, with the factor $1/\delta$
+the hydraulic length of the slot. As in adiabatic duct flow, the
+$\left(1-M^2\right)$ factor makes the two sources drive $M$ toward unity from
+either side, so the exit Mach number is insensitive to the precise boundary
+value over the range $1.4$--$1.8$ inferred for the plume; we adopt $M=1.6$ at the
+crack mouth.
+
+\end{article}
+\end{document}

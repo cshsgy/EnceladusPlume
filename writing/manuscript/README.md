@@ -19,13 +19,21 @@ bundle):
 | `Figures/Figure_1.pdf`, `Figure_2.pdf` | `\includegraphics` | Observation + schematic (kept). Figures 3–10 of the first draft were removed (misused constants). |
 | `Figures/wall_seal_regime.pdf`, `peak_predictor.pdf` | `\includegraphics` | New figures generated from the solver. |
 
+## Supporting Information
+
+[`si.tex`](si.tex) (AGU `agutexSI2019` class) holds the detailed derivations the
+main text refers to: Text S1 the depth-integrated liquid momentum equation, S2
+the wall thermal-layer energy balance, S3 the gas-column Mach relation.
+
 ## Building
 
 ```bash
-pdflatex main
-bibtex   main
-pdflatex main
-pdflatex main
+pdflatex main && bibtex main && pdflatex main && pdflatex main   # main text
+pdflatex si                                                       # supporting info
 ```
 
-(Or `latexmk -pdf main.tex` once the assets above are present.)
+(Or `latexmk -pdf main.tex`.)
+
+> Note: the main-text `dv_0/dt` equation (Eq. 4) was corrected here — the
+> unsteady term carries a factor `(h+L)^2` (required dimensionally and matching
+> the solver); see Text S1.
