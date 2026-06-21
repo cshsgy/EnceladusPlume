@@ -31,9 +31,18 @@ flagged below (two are clear bugs, two need an author decision).
 - **#1 FIXED** — `8.341 → 8.314` in `config.py`, `interpolator.py`, `gas_dynamics/solver.py`, `wall_budget.py`, and `cpp/.../gas.hpp` (rebuilt). Native parity holds.
 - **#2 FIXED** — gas-solver `lv` default `2.8e6 → 2.84e6` (`interpolator.py`, `gas.hpp`, `bindings.cpp`); now consistent with config everywhere.
 - **#3 FIXED** — `config.thermal_conductivity 3.0 → 2.4`, matching the gas/wall-budget `k`.
-- **#4 RESOLVED (paper updated)** — the liquid friction *is* Churchill (the code default); the Methods text was rewritten to describe the Churchill (1977) Reynolds-dependent `C_f` instead of a constant `0.002`. **Still open:** the *gas-column* lookup is built with a constant `C_f=0.002` (the gas solver's default `friction_model="constant"`), not Churchill — switch it too if gas friction should also be Reynolds-dependent (rebuilds the lookup, shifts gas/peak amplitudes).
+- **#4 RESOLVED (liquid only)** — the inconsistency was the **liquid** friction:
+  the Methods stated a constant `C_f=0.002` but the code uses Churchill (1977),
+  Reynolds-dependent. The Methods text was rewritten to describe Churchill (+
+  `churchill1977` in the bib). The **gas** column was never the inconsistency —
+  its constant `C_f=0.002` already matched the paper. Switching the gas to
+  Churchill was tested and **reverted**: it chokes the gas column for essentially
+  the whole cycle (the low-Reynolds startup region gives runaway laminar friction
+  `C_f=C_lam/(8Re)\to\infty`), so the plume — and the two-peak structure —
+  vanishes. The gas therefore keeps constant `C_f=0.002`.
 
-Affected figure `peak_predictor.pdf` was regenerated (gas lookup depends on `R`, `L_v`); `wall_seal_regime.pdf` is pure-liquid and unaffected.
+Affected figure `peak_predictor.pdf` was regenerated for the corrected `R`/`L_v`
+(gas friction unchanged); `wall_seal_regime.pdf` is pure-liquid and unaffected.
 
 ## Issues (original)
 
