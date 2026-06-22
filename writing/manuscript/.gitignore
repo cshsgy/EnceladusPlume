@@ -10,4 +10,4 @@
 *.toc
 *.lof
 *.lot
-main.pdf
+# compiled main.pdf / si.pdf are tracked (the rendered manuscript)

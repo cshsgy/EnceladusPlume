@@ -234,7 +234,7 @@ We assume a sinusoidal time dependence of crack width, with a minimum at the pha
 \end{equation}
 
 Here $t$ is the time where the model phase is at 0 degrees, $\delta(t)$ is the crack width, $\delta_{min}$ is the smallest width, and $R_\delta$ is the ratio of the maximum width to the smallest. $P$ is 33 hours, the period of Enceladus' rotation and revolution, being the same as it is tidally locked.
-\textbf{However, it may be more appropriate to use a double-cosine when considering tidally-heated processes as described in \citet{MeyerZuWestram2024} Meyer zu Westram et al. 2024. In this way, one can rewrite Eqn. \ref{Eq: Enceladus-1} with the identity:} \[
+\textbf{However, it may be more appropriate to use a double-cosine when considering tidally-heated processes as described in \citeA{MeyerZuWestram2024}. In this way, one can rewrite Eqn. \ref{Eq: Enceladus-1} with the identity:} \[
 \cos\phi = \frac{4}{3}\cos\phi - \frac{1}{3}\cos 2\phi + \frac{1}{3}
 \]
 
@@ -604,8 +604,14 @@ While some assumptions are made, the physical processes modeled would follow a s
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section*{Open Research Section}
-This section MUST contain a statement that describes where the data supporting the conclusions can be obtained. Data cannot be listed as ''Available from authors'' or stored solely in supporting information. Citations to archived data should be included in your reference list. Wiley will publish it as a separate section on the paper’s page. Examples and complete information are here:
-https://www.agu.org/Publish with AGU/Publish/Author Resources/Data for Authors
+This is a modelling study and uses no new observational data. The model source
+code that produces all results and figures in this work --- the Python solver
+(with an optional C++ performance core), the configuration files, and the
+figure-generating scripts --- is openly available in the \texttt{EnceladusPlume}
+repository at \url{https://github.com/cshsgy/EnceladusPlume}. The observed slab
+density shown in Figure~\ref{fig:enc:1} is reproduced from \citeA{ingersoll2020time}.
+% For final submission, deposit a versioned archive of the repository (e.g. Zenodo)
+% and cite its DOI here, as AGU requires an archived, citable data/software record.
 
 \section*{As Applicable – Inclusion in Global Research Statement}
 The Authorship: Inclusion in Global Research policy aims to promote greater equity and transparency in research collaborations. AGU Publications encourage research collaborations between regions, countries, and communities and expect authors to include their local collaborators as co-authors when they meet the AGU Publications authorship criteria (described here: https://www.agu.org/publications/authors/policies\#authorship). Those who do not meet the criteria should be included in the Acknowledgement section. We encourage researchers to consider recommendations from The TRUST CODE - A Global Code of Conduct for Equitable Research Partnerships (https://www.globalcodeofconduct.org/) when conducting and reporting their research, as applicable, and encourage authors to include a disclosure statement pertaining to the ethical and scientific considerations of their research collaborations in an “Inclusion in Global Research Statemstandalone section in the manuscript following the Conclusions section. This can include disclosure of permits, authorizations, permissions and/or any formal agreements with local communities or other authorities, additional acknowledgements of local help received, and/or description of end-users of the research. You can learn more about the policy in this editorial. Example statements can be found in the following published papers: 
