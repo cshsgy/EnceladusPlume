@@ -91,9 +91,9 @@ def compute(lookup, cache):
     MA, g = _flux_curve(cfg, 5000.0, 0.010, 0.007, lookup)
     pr = predict_peaks(cfg, 0.010, 0.007, lookup, Tb=TB)
 
-    # --- Fig 4b: steady-state scatter ---
+    # --- Fig 4b: steady-state scatter (span shallow->deep to cover the observed) ---
     xs, ys, cols = [], [], []
-    for L in (5000.0, 20000.0):
+    for L in (2000.0, 3000.0, 5000.0, 10000.0, 20000.0):
         for dw in (0.010, 0.020, 0.040):
             for we in (0.005, 0.007, 0.009, 0.011):
                 cfg.physical.equilibrium_depth = L
@@ -141,17 +141,22 @@ def plot(cache):
     ax[0].axvline(float(d["phi_a"]), ls="--", c="C3", label=f"approach {float(d['phi_a']):.0f}$^\\circ$")
     ax[0].set_xlabel("mean anomaly [deg]"); ax[0].set_ylabel("mass flux (normalized)")
     ax[0].set_title("(a) Two gas-flux peaks"); ax[0].legend(fontsize=8)
-    sc = ax[1].scatter(d["xs"], d["ys"], c=d["cols"], cmap="viridis", s=45,
-                       edgecolor="k", linewidth=0.4, zorder=3)
-    ax[1].scatter([OBS_WIDENING_KGS], [OBS_RATIO], s=240, c="red", marker="o",
+    xs, ys, cols = d["xs"], d["ys"], d["cols"]
+    styles = {2.0: ("o", "tab:blue"), 3.0: ("s", "tab:green"), 5.0: ("^", "tab:orange"),
+              10.0: ("D", "tab:purple"), 20.0: ("v", "tab:brown")}
+    for L in sorted(set(np.round(cols, 0).tolist())):
+        sel = np.round(cols, 0) == L
+        mk, co = styles.get(L, ("o", "gray"))
+        ax[1].scatter(xs[sel], ys[sel], marker=mk, c=co, s=50, edgecolor="k",
+                      linewidth=0.4, zorder=3, label=f"$L$={L:.0f} km")
+    ax[1].scatter([OBS_WIDENING_KGS], [OBS_RATIO], s=260, c="red", marker="*",
                   edgecolor="k", zorder=5, label="approx. observed")
     ax[1].axhline(1.0, color="grey", ls=":")
-    cb = fig.colorbar(sc, ax=ax[1]); cb.set_label("depth $L$ [km]")
     ax[1].set_xscale("log")
     ax[1].set_yscale("log")
     ax[1].set_xlabel("widening-peak emission [kg/s]")
     ax[1].set_ylabel("approach / widening (= main / secondary)")
-    ax[1].set_title("(b) Steady-state cases vs Enceladus"); ax[1].legend(fontsize=8, loc="upper right")
+    ax[1].set_title("(b) Steady-state cases vs Enceladus"); ax[1].legend(fontsize=7, loc="best")
     fig.tight_layout(); fig.savefig(os.path.join(OUT, "peak_predictor.pdf"))
     print("wrote peak_predictor.pdf")
 
