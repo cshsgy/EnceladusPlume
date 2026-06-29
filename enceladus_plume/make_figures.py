@@ -92,14 +92,23 @@ def compute(lookup, cache):
     pr = predict_peaks(cfg, 0.010, 0.007, lookup, Tb=TB)
 
     # --- Fig 4b: steady-state scatter (span shallow->deep to cover the observed) ---
+    # The two peaks coexist over a small-swing / small-width window at shallow
+    # depth (low ratio) and a broader window at depth (high ratio); sample both.
+    grid = [(L, dw, we)
+            for L in (1500.0, 2000.0, 3000.0)
+            for dw in (0.008, 0.010, 0.012, 0.015, 0.018)
+            for we in (0.002, 0.003, 0.004, 0.005, 0.006)]
+    grid += [(L, dw, we)
+             for L in (5000.0, 10000.0, 20000.0)
+             for dw in (0.010, 0.020, 0.040)
+             for we in (0.004, 0.006, 0.008, 0.010)]
     xs, ys, cols = [], [], []
-    for L in (2000.0, 3000.0, 5000.0, 10000.0, 20000.0):
-        for dw in (0.010, 0.020, 0.040):
-            for we in (0.005, 0.007, 0.009, 0.011):
-                cfg.physical.equilibrium_depth = L
-                p = predict_peaks(cfg, dw, we, lookup, Tb=TB)
-                if p.has_two_peaks and p.hmax_over_D > 0.95 and p.A_widening > 0:
-                    xs.append(p.A_widening * CRACK_LENGTH); ys.append(p.ratio); cols.append(L / 1e3)
+    for L, dw, we in grid:
+        cfg.physical.equilibrium_depth = L
+        p = predict_peaks(cfg, dw, we, lookup, Tb=TB)
+        # depth-aware overflow gate: the surface barrier caps h_max at ~D-2*delta
+        if p.has_two_peaks and p.hmax_over_D > 1.0 - 200.0 / L and p.A_widening > 0:
+            xs.append(p.A_widening * CRACK_LENGTH); ys.append(p.ratio); cols.append(L / 1e3)
 
     np.savez(cache, seal_dw=seal_dw, we_all=np.array(we_all), rise_all=np.array(rise_all),
              wstar=np.array(wstar), MA=MA, g=g, phi_w=pr.phi_widening, phi_a=pr.phi_approach,
@@ -142,13 +151,13 @@ def plot(cache):
     ax[0].set_xlabel("mean anomaly [deg]"); ax[0].set_ylabel("mass flux (normalized)")
     ax[0].set_title("(a) Two gas-flux peaks"); ax[0].legend(fontsize=8)
     xs, ys, cols = d["xs"], d["ys"], d["cols"]
-    styles = {2.0: ("o", "tab:blue"), 3.0: ("s", "tab:green"), 5.0: ("^", "tab:orange"),
-              10.0: ("D", "tab:purple"), 20.0: ("v", "tab:brown")}
-    for L in sorted(set(np.round(cols, 0).tolist())):
-        sel = np.round(cols, 0) == L
+    styles = {1.5: ("o", "tab:blue"), 2.0: ("s", "tab:cyan"), 3.0: ("^", "tab:green"),
+              5.0: ("D", "tab:orange"), 10.0: ("v", "tab:purple"), 20.0: ("P", "tab:brown")}
+    for L in sorted(set(cols.tolist())):
+        sel = cols == L
         mk, co = styles.get(L, ("o", "gray"))
         ax[1].scatter(xs[sel], ys[sel], marker=mk, c=co, s=50, edgecolor="k",
-                      linewidth=0.4, zorder=3, label=f"$L$={L:.0f} km")
+                      linewidth=0.4, zorder=3, label=f"$L$={L:g} km")
     ax[1].scatter([OBS_WIDENING_KGS], [OBS_RATIO], s=260, c="red", marker="*",
                   edgecolor="k", zorder=5, label="approx. observed")
     ax[1].axhline(1.0, color="grey", ls=":")
