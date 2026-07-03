@@ -233,19 +233,7 @@ We assume a sinusoidal time dependence of crack width, with a minimum at the pha
     \label{Eq: Enceladus-1},
 \end{equation}
 
-Here $t$ is the time where the model phase is at 0 degrees, $\delta(t)$ is the crack width, $\delta_{min}$ is the smallest width, and $R_\delta$ is the ratio of the maximum width to the smallest. $P$ is 33 hours, the period of Enceladus' rotation and revolution, being the same as it is tidally locked.
-\textbf{However, it may be more appropriate to use a double-cosine when considering tidally-heated processes as described in \citeA{MeyerZuWestram2024}. In this way, one can rewrite Eqn. \ref{Eq: Enceladus-1} with the identity:} \[
-\cos\phi = \frac{4}{3}\cos\phi - \frac{1}{3}\cos 2\phi + \frac{1}{3}
-\]
-
-\textbf{so that: }
-
-\begin{equation}
-\delta(t) = \delta_{\min} \left( \frac{R_\delta + 1}{3} - \frac{2(R_\delta-1)}{3} \cos\frac{2\pi t}{P} + \frac{R_\delta-1}{6} \cos\frac{4\pi t}{P} \right)
-\end{equation}
-
-
-
+Here $t$ is the time where the model phase is at 0 degrees, $\delta(t)$ is the crack width, $\delta_{min}$ is the smallest width, and $R_\delta$ is the ratio of the maximum width to the smallest. $P$ is 33 hours, the period of Enceladus' rotation and revolution, being the same as it is tidally locked. Equivalently, the wall motion is characterized by its absolute swing $\Delta\delta = \delta_{max}-\delta_{min} = (R_\delta-1)\delta_{min}$, which is the quantity set by the tidal stress and is conserved as the crack seals (Section~\ref{sec:attractor}).
 
 In Fig. \ref{fig:enc:1}, $L$ is the equilibrium depth of the liquid water column, $h$ is the water level height above the neutral water level, $D$ is the instantaneous depth of the water level, and the height $z$ is set to be zero at the bottom of the crack (where it connects to an ocean) and increases upwards. With the walls widening and narrowing, the liquid water moves vertically, and its velocity is a function of both time and height, $v=v(z,t)$. For convenience, we denote the velocities at the entrance of the crack and the gas-liquid interface as $v_0=v(0,t)$ and $v_h=v(h+L,t)$, respectively.
 
@@ -287,10 +275,6 @@ The time derivative of $h$ is the velocity at location $h+L$ and is obtained fro
 
 Equations \ref{Eq: Enceladus-4} and \ref{Eq: Enceladus-6} are the non-linear, time-dependent equations for the dependent variables $v_0(t)$ and $h(t)$. Detailed derivations can be found in Supporting Information.
 
-\begin{equation}
-    \frac{dM}{M} (1 - M^2) \left( 1 + \frac{\gamma - 1}{2} M^2 \right)^{-1} = \left( \frac{E}{\rho v \delta} + \frac{\gamma C_f}{2\delta} M^2 \right) dz.
-\end{equation}
-
 \subsection{Heat storage and evaporation}
 \label{sec:heat}
 The heat transfer in the thin layer of the wall (region 5) is controlled by two processes: heat conduction (region 3) and sublimation/condensation of the water vapor (region 2). The two processes differ greatly in their characteristic time scale. Region 5 serves as a thermal conduction layer that connects the two parts of the model. It has a thickness of 1 meter, which is several times the thermal skin depth corresponding to the time of a diurnal cycle ($\sim$0.33 m). This thickness allows us to resolve most of the variabilities associated with a diurnal cycle.
@@ -329,20 +313,21 @@ According to \citeA{dong2011water}, the best-fit exit Mach number of the plume i
 Different parts are assembled into a full model. The rising of falling of water level is solved first, which is used for calculation of the mass flux. To model the variability of the mass flux, we need to solve for the flow of water vapor. The water level is evaporative, creating a flow in the crack, but the mass flux and the speed of the initiated flow depends on the initial water vapor back pressure $p_b$ just above the water level. The flow accelerates and exchanges mass with the walls, and the value of $p_b$ is iteratively selected to match the condition that $M=1.6$ at the exit. The model is run for about 100 days on Enceladus until the diurnal oscillations in the thermal layer stabilize. 
 
 \section{Results}
-To explore the effects of each parameter, we conducted simulations on a parameter grid. The three controlling parameters are the equilibrium water column depth $L$, the minimum width $\delta_{min}$ and the ratio of the maximum width to the minimum width $R_{\delta}$ The selections of the parameters are specified in Table \ref{tbl:enc:model_parameters}. For the choices of minimum width values, we selected a wide range ranging from centimeters suggested by \citeA{nakajima2016controlled} to a meter suggested by \citeA{kite2016sustained}. As shown below, the self-sealing feedback drives cracks across this entire range toward a common small-width state, so the relevant behavior is set not by the initial width but by the width ratio $R_\delta$ and depth $L$.
+The controlling parameters of the model are the equilibrium water-column depth $L$ and the absolute tidal swing of the walls $\Delta\delta=\delta_{max}-\delta_{min}$; their ranges are listed in Table~\ref{tbl:enc:model_parameters}. We deliberately span an initial minimum width from centimetres \cite{nakajima2016controlled} to a metre \cite{kite2016sustained}, but the initial width is not a true control parameter: as shown below, the self-sealing feedback drives cracks of any initial width to a common, small effective width $w_{\rm eff}$, so the observable behavior is set by $\Delta\delta$ and $L$ alone.
 
 \begin{table}[hbt!]
     \centering
     \begin{tabular}{l l}
         \hline
-        \textbf{Parameter} & \textbf{Choices of values} \\
+        \textbf{Parameter} & \textbf{Range explored} \\
         \hline
-        Equilibrium water depth $L$ & 5 km, 10 km, and 20 km \\
-        Minimum width $\delta_{min}$ & 1 mm, 2 mm, 5 mm, 1 cm, 5 cm, 20 cm, 50 cm, 1 m \\
-        Width ratio $R_\delta$ & 1.05, 1.0, 1.15, 1.2, 1.3, 1.5, 2.0, 3.0, 5.0 \\
+        Equilibrium water depth $L$ & 1.5 -- 20 km \\
+        Absolute tidal swing $\Delta\delta=\delta_{max}-\delta_{min}$ & 2 -- 40 mm \\
+        Initial minimum width $\delta_{min}$ & 1 mm -- 1 m (converges; see Section~\ref{sec:attractor}) \\
+        Sealed effective width $w_{\rm eff}$ & $\sim$1 -- 10 mm (emergent, not prescribed) \\
         \hline
     \end{tabular}
-    \caption{Parameters selected for model simulations.}
+    \caption{Model parameters. Only $L$ and the tidal swing $\Delta\delta$ are true controls; the initial width is swept only to show that it is irrelevant, and the sealed width $w_{\rm eff}$ emerges from the self-sealing feedback.}
     \label{tbl:enc:model_parameters}
 \end{table}
 
@@ -373,11 +358,62 @@ With $\Delta w$ held fixed, the water rise grows steeply as the gap closes --- i
     \label{fig:enc:seal}
 \end{figure}
 
+This convergence is fast and independent of where the crack starts.
+Figure~\ref{fig:enc:converge} follows the closeness of approach $h_{\max}/D$ as
+condensation seals the crack, starting from initial widths spanning an order of
+magnitude (1~cm to 10~cm). At the model's condensation supply the effective width
+narrows steadily, and every case reaches overflow within a handful of diurnal
+cycles (a wider initial gap simply takes a few cycles longer); the trajectories
+all collapse onto the same approach curve because the water level depends only on
+the current effective width. The overflow state is thus reached from any starting
+configuration on a timescale of days to weeks.
+
+\begin{figure}[hbt!]
+    \centering
+    \includegraphics[width=0.7\textwidth]{Figures/attractor_convergence.pdf}
+    \caption{Convergence to the overflow attractor (equilibrium depth 5~km,
+    $\Delta w=12$~mm). Each curve follows the maximum water rise $h_{\max}/D$ as
+    wall condensation narrows the effective width, cycle by cycle, from a
+    different initial width (1--10~cm). Regardless of the starting width, the
+    water climbs to overflow within a few diurnal cycles; a wider initial gap only
+    delays the approach. The common approach curve reflects that the water level
+    is set by the current effective width alone, not by the crack's original
+    size.}
+    \label{fig:enc:converge}
+\end{figure}
+
+The deposition that drives this sealing is, however, far from uniform. Figure~\ref{fig:enc:cond} shows the instantaneous condensation rate along the exposed wall at three phases of the cycle. At every phase the deposition is sharply concentrated within the thermal skin depth (${\sim}$decimetre) of the crack mouth, where the wall is warmest, and it falls off by two to three orders of magnitude deeper down. What changes over the cycle is the \emph{extent} of the exposed wall: when the water level is neutral or low (widening phase) the vapor sees the full gas column, from the mouth down to hundreds of metres, whereas when the water has risen to near the surface (narrowing phase) condensation is confined to the topmost few metres. The sealing is therefore both spatially concentrated at the lip and strongly modulated in reach over the cycle, so the ice load it deposits is uneven in depth and time. Translating this uneven, lip-concentrated deposition into a net channel narrowing requires knowing how the ice is redistributed by viscoelastic creep; reconciling the condensation mass budget with the ice convection that carries the deposit away from the lip is the main open problem left for future work.
+
+\begin{figure}[hbt!]
+    \centering
+    \includegraphics[width=0.7\textwidth]{Figures/condensation_profiles.pdf}
+    \caption{Instantaneous wall condensation rate versus depth below the crack
+    mouth (log--log; equilibrium depth 5~km, $\Delta w=20$~mm,
+    $w_{\rm eff}=8$~mm) at three phases of the diurnal cycle: a wide crack at a
+    near-neutral water level (widening phase), a narrowing crack with the water
+    risen to near the surface, and a widening crack with the water drawn down.
+    Condensation concentrates within the thermal skin depth of the mouth at all
+    phases, but the exposed window over which it acts ranges from the topmost few
+    metres (high water) to the full ${\sim}500$~m column (low water), marked by the
+    filled circle at each curve's lower end (the water level). The deposition is
+    thus spatially uneven and strongly phase-dependent.}
+    \label{fig:enc:cond}
+\end{figure}
+
 \subsection{Predicting the phase and strength of the two mass-flux peaks}
 \label{sec:peaks}
 Once the geometry is on the attractor, the diurnal mass flux is dominated by gas
 evaporation $w\,\phi_{top}(w,\,D-h)$; the liquid overflow contributes less than
-5\%. This flux has two peaks, both with a simple predictor.
+5\%. The way this flux develops as a crack seals is shown in
+Figure~\ref{fig:enc:closing}. Early in the sealing, when the crack is still wide,
+the diurnal flux is a single broad pulse peaking near the maximum-width phase
+(MA $\approx 180^\circ$); as condensation narrows the effective width and the
+water climbs toward the surface, a second maximum emerges on the closing side of
+the cycle (MA $\approx 290^\circ$), where the shortening gas column raises the
+evaporation rate. The near-close-up curve thus carries the two-peak structure
+that is the signature of the attractor; the emergence of the late-cycle peak,
+rather than any change in forcing, is what produces the secondary emission. This
+flux has two peaks, both with a simple predictor.
 
 The \emph{widening peak} occurs near the maximum-crack-width phase
 (MA $\approx 180$--$215^\circ$, approaching $180^\circ$ for stronger forcing) and
@@ -389,6 +425,20 @@ with $w(\psi_h)\,\phi_{top}(w(\psi_h),\,D-h_{\max})$, and because $\phi_{top}$
 rises steeply as the gas column shortens, it grows sharply as the water nears the
 surface. The two peaks are therefore separated by $\psi_h-180^\circ\approx
 90$--$140^\circ$, set by the forcing geometry.
+
+\begin{figure}[hbt!]
+    \centering
+    \includegraphics[width=0.7\textwidth]{Figures/closing_massflux.pdf}
+    \caption{Diurnal mass flux (per-length flux $\times$ 500~km) of a sealing
+    crack at two stages ($L=5$~km, $\Delta w=20$~mm). Early, while the crack is
+    still wide ($w_{\rm eff}=20$~mm), the flux is a single broad pulse near the
+    maximum-width phase. Near close-up ($w_{\rm eff}=6$~mm), once the water reaches
+    the surface, a second maximum appears on the closing side of the cycle
+    (MA $\approx 290^\circ$) --- the approach peak --- while the overall throughput
+    drops as the gap narrows. The two-peak profile is a consequence of the sealing,
+    not of the tidal forcing, which is identical for both curves.}
+    \label{fig:enc:closing}
+\end{figure}
 
 The relative strength is governed by the closeness of approach $h_{\max}/D$ ---
 the same attractor variable of Section~\ref{sec:attractor}
@@ -435,6 +485,33 @@ Because the total scales linearly with the assumed active length, this magnitude
 is an order-of-unity check rather than a tight constraint; conversely, the
 secondary-to-main ratio depends on the absolute swing $\Delta w$ and the depth,
 and could be inverted to constrain them.
+
+The model also reproduces the \emph{phases} of the emission. The diurnal cycle
+carries a single free parameter that the data cannot fix independently --- the
+absolute orbital phase of the tidal forcing relative to the geometry --- so we
+allow one global phase offset and align the stronger (approach) peak with the
+observed main peak. The weaker (widening) peak then falls close to the observed
+secondary peak without further adjustment (Figure~\ref{fig:enc:overlay}): the
+model's two maxima land within, or just beside, the phase bands of the observed
+main (MA $\approx160$--$215^\circ$) and secondary (MA $\approx30$--$70^\circ$)
+peaks seen in the slab-density profile (Figure~\ref{fig:enc:1};
+\citeA{ingersoll2020time}). The $\sim$100--130$^\circ$ separation between the two
+model peaks, set by the forcing geometry, thus matches the observed two-peak
+spacing.
+
+\begin{figure}[hbt!]
+    \centering
+    \includegraphics[width=0.7\textwidth]{Figures/phase_overlay.pdf}
+    \caption{Model diurnal mass flux (normalized; the attractor case of
+    Figure~\ref{fig:enc:peaks}a) after applying the single permitted global phase
+    offset that aligns the approach peak with the observed main peak. Shaded bands
+    mark the observed main and secondary peak phases from the Cassini slab-density
+    profile (\citeA{ingersoll2020time}; Figure~\ref{fig:enc:1}); no observed flux
+    curve is plotted, only the peak phases. The model's second (widening) peak
+    falls near the observed secondary band without further tuning, and the two
+    model peaks reproduce the observed $\sim$130$^\circ$ separation.}
+    \label{fig:enc:overlay}
+\end{figure}
 
 \section{Conclusions}
 We modeled the activities of the plumes on Enceladus by treating the crack as a long fissure whose walls widen and narrow over the diurnal cycle. The water level is strongly correlated with the rate of wall motion, and because friction makes the water-level excursion scale steeply with the inverse crack width, a narrowing crack drives the water toward the surface.
