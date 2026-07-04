@@ -28,7 +28,9 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from enceladus_plume.config import load_config
-from enceladus_plume.liquid_dynamics.solver import liquid_dynamics, compute_overflow_rate
+from enceladus_plume.liquid_dynamics.solver import (
+    liquid_dynamics, compute_overflow_rate, buffer_overflow,
+)
 from enceladus_plume.utils import build_width_series
 from enceladus_plume.gas_dynamics.interpolator import generate_r_table
 from enceladus_plume.gas_dynamics.lookup import GasLookupTable
@@ -81,6 +83,7 @@ def _flux_curve(cfg, L, dw, we, lookup):
                                            np.clip(w, lookup.delta.min(), lookup.delta.max()))
     gas = np.nan_to_num(phi * w)
     ov = np.nan_to_num(f_evap * rho_w * w * compute_overflow_rate(t, v, h, w_in, t_in, L, cfg))
+    ov = buffer_overflow(t, ov, cfg.liquid_dynamics.overflow_tau)  # surface reservoir
     flux = gas + ov
     m = t >= (t[-1] - P)
     o = np.argsort(t[m] - t[m][0])

@@ -30,7 +30,9 @@ from typing import Optional
 import numpy as np
 
 from .config import Config
-from .liquid_dynamics.solver import liquid_dynamics, compute_overflow_rate
+from .liquid_dynamics.solver import (
+    liquid_dynamics, compute_overflow_rate, buffer_overflow,
+)
 from .utils import build_width_series
 
 
@@ -157,6 +159,9 @@ def predict_peaks(
     rho_w = float(cfg.physical.liquid_density)
     overflow_dhdt = compute_overflow_rate(t, v, h, w_in, t_in, L, cfg)
     overflow = np.nan_to_num(f_evap * rho_w * w * overflow_dhdt)
+    # release through the surface reservoir (finite residence time) rather than
+    # evaporating instantly at the lip -- physical and smooth (mass-conserving).
+    overflow = buffer_overflow(t, overflow, cfg.liquid_dynamics.overflow_tau)
     flux = gas + overflow  # total diurnal mass flux (per unit crack length)
 
     m = t >= (t[-1] - P)

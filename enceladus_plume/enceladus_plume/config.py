@@ -50,6 +50,13 @@ class LiquidDynamicsParams:
     atol: float = 1.0e-8
     max_step: float = 50.0
     n_periods: int = 4
+    # Residence time (s) of overflow water in the surface reservoir before it is
+    # released to the plume as vapour. Overflow does not evaporate instantly at
+    # the lip; it pools and drains over tau ~ rho_w * delta_pond / j_net, with
+    # j_net the Hertz-Knudsen evaporation flux into the plume back-pressure
+    # (well below the vacuum limit). ~0.5 h for a mm-cm pond; the flux is
+    # insensitive to tau over a plausible range.
+    overflow_tau: float = 1800.0
 
 
 @dataclass

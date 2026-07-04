@@ -61,31 +61,43 @@ def _derivative(v: float, h: float, L: float, g: float,
     return dvdt, dhdt
 
 
-def _make_clamped_rhs(raw_rhs, D: float, L: float):
-    """Wrap *raw_rhs* with smooth overflow/floor barriers.
+# Surface / floor barrier parameters (module-level so they are shared with
+# compute_overflow_rate). The water level is capped at the surface (h = +D) and
+# the ice floor (h = -L) by a stiff restoring force acting within BARRIER_DELTA
+# of the boundary. Note: the sharp approach peak in the flux is the physical
+# rapid surge of the piston-driven water reaching the surface, not a barrier
+# artifact -- softening this layer only lowers the closeness of approach h_max/D
+# (verified over BARRIER_DELTA = 10-120 m) without rounding it, so it is kept
+# stiff; the (genuinely spiky) instantaneous overflow evaporation is instead
+# smoothed physically by the surface reservoir, see buffer_overflow().
+BARRIER_DELTA = 10.0   # m, transition layer thickness
+BARRIER_K = 10.0       # 1/s^2, restoring acceleration in the barrier zone
+BARRIER_DAMP = 5.0     # 1/s, velocity damping rate in the barrier zone
 
-    Uses a stiff exponential restoring force that activates within a thin
-    transition layer near h = +D (surface) and h = -L (ice floor).
-    The barrier is smooth so explicit ODE solvers remain efficient.
+
+def _make_clamped_rhs(raw_rhs, D: float, L: float):
+    """Wrap *raw_rhs* with the overflow/floor barrier.
+
+    A stiff restoring force activates within ``BARRIER_DELTA`` of the surface
+    (h = +D) and the ice floor (h = -L), capping the water level. The barrier is
+    C1 so explicit ODE solvers stay efficient.
     """
-    _DELTA = 10.0    # m, transition layer thickness
-    _K = 10.0        # 1/s², barrier stiffness (restoring acceleration)
-    _DAMP_COEF = 5.0 # 1/s, velocity damping rate in the barrier zone
+    dlt = BARRIER_DELTA
 
     def clamped_rhs(t, y):
         v, h = float(y[0]), float(y[1])
         dvdt, dhdt = raw_rhs(t, y)
 
-        if h > D - _DELTA:
-            pen = max(0.0, (h - (D - _DELTA)) / _DELTA)
+        if h > D - dlt:
+            pen = max(0.0, (h - (D - dlt)) / dlt)
             pen2 = pen * pen
             dhdt = dhdt * (1.0 - pen2) if dhdt > 0 else dhdt
-            dvdt -= _K * pen2 * (h - D + _DELTA) + _DAMP_COEF * pen2 * v
-        elif h < -L + _DELTA:
-            pen = max(0.0, ((-L + _DELTA) - h) / _DELTA)
+            dvdt -= BARRIER_K * pen2 * (h - D + dlt) + BARRIER_DAMP * pen2 * v
+        elif h < -L + dlt:
+            pen = max(0.0, ((-L + dlt) - h) / dlt)
             pen2 = pen * pen
             dhdt = dhdt * (1.0 - pen2) if dhdt < 0 else dhdt
-            dvdt += _K * pen2 * (-L + _DELTA - h) - _DAMP_COEF * pen2 * v
+            dvdt += BARRIER_K * pen2 * (-L + dlt - h) - BARRIER_DAMP * pen2 * v
 
         return [dvdt, dhdt]
 
@@ -270,8 +282,6 @@ def liquid_dynamics_2022(
 # Overflow post-processing
 # ---------------------------------------------------------------------------
 
-_BARRIER_DELTA = 10.0  # must match _DELTA in _make_clamped_rhs
-
 
 def compute_overflow_rate(
     t_rec: np.ndarray,
@@ -333,7 +343,7 @@ def compute_overflow_rate(
 
     for i in range(n):
         h = float(h_rec[i])
-        if h <= D - _BARRIER_DELTA:
+        if h <= D - BARRIER_DELTA:
             continue
 
         t = float(t_rec[i])
@@ -348,8 +358,56 @@ def compute_overflow_rate(
         if dhdt_raw <= 0.0:
             continue
 
-        pen = max(0.0, (h - (D - _BARRIER_DELTA)) / _BARRIER_DELTA)
+        pen = max(0.0, (h - (D - BARRIER_DELTA)) / BARRIER_DELTA)
         pen2 = pen * pen
         overflow[i] = dhdt_raw * pen2
 
     return overflow
+
+
+def buffer_overflow(
+    t_rec: np.ndarray,
+    influx: np.ndarray,
+    tau: float,
+) -> np.ndarray:
+    """Low-pass the overflow influx through a surface liquid/ice reservoir.
+
+    Overflow water does not evaporate the instant it crosses the crack lip; it
+    pools at the surface and is released to the plume over a finite residence
+    time ``tau`` (s). The reservoir mass ``M`` per unit crack length obeys
+
+        dM/dt = influx(t) - M / tau,      released vapour rate = M / tau,
+
+    which is mass-conserving --- at periodic steady state the cycle integral of
+    the release equals that of the influx --- and turns the instantaneous
+    overflow spike into a smooth, slightly lagged bump. Because the reservoir is
+    linear, buffering the vapour-destined influx ``f_evap * rho_w * w * overflow``
+    is identical to buffering the liquid pond and applying ``f_evap`` on release.
+
+    Integrated with the exact solution for a piecewise-constant influx over each
+    (possibly non-uniform) output step, so it is unconditionally stable for any
+    ``tau`` and step size.
+
+    Parameters
+    ----------
+    t_rec  : solution times (s), monotonically increasing over the run.
+    influx : overflow source at each time (same length as ``t_rec``).
+    tau    : reservoir residence time (s). ``tau -> 0`` recovers the raw influx.
+
+    Returns
+    -------
+    release : buffered release rate (same units and length as ``influx``).
+    """
+    influx = np.asarray(influx, dtype=float)
+    if tau <= 0.0:
+        return influx
+    M = np.zeros_like(influx)
+    for i in range(1, len(t_rec)):
+        dt = float(t_rec[i] - t_rec[i - 1])
+        if dt <= 0.0:
+            M[i] = M[i - 1]
+            continue
+        a = np.exp(-dt / tau)
+        # exact update for dM/dt = q - M/tau with q constant over the step
+        M[i] = M[i - 1] * a + influx[i - 1] * tau * (1.0 - a)
+    return M / tau
