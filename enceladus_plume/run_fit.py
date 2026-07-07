@@ -42,15 +42,17 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 _DATA = os.path.join(_HERE, "data", "observed_diurnal.csv")
 TB = 272.6
 
-# (dw, L) search grid. w_eff* (overflow seal depth) is computed per cell -- it
-# depends on L enough (~8 mm at 5 km vs ~12 mm at 10 km) that the L_REF shortcut
-# is not accurate; the flux-curve shape is what discriminates the two peaks.
-DW_GRID = np.array([8, 10, 12, 14, 17, 20, 25]) * 1e-3            # m
-L_GRID = np.array([3, 4, 5, 7, 10, 14, 20]) * 1e3                 # m
-PHI_STEP = 2.0                                                    # deg
+# (dw, L) search grid. w_eff* (overflow seal depth) is computed per cell.
+DW_GRID = np.array([10, 12, 14, 17, 20, 25]) * 1e-3              # m
+L_GRID = np.array([3, 5, 7, 10, 14, 20]) * 1e3                   # m
+PHI_STEP = 2.0                                                   # deg
 
-
-L_REF = 5000.0  # reference depth for the (nearly depth-independent) seal depth
+# Second-harmonic (double-cosine) forcing: amplitude scale and phase (deg). The
+# tidal stress across the tiger stripes is not a pure single sinusoid; a 2f term
+# (shifted-double-cosine forcing, MeyerZuWestram2024) is fit per cell. scale=0
+# recovers the single-cosine exactly and is always included as the baseline.
+HARM_SCALES = np.array([0.0, 1.5, 2.0])
+HARM_PHASES = np.array([45.0, 67.5])
 
 
 def _cfg():
@@ -61,10 +63,11 @@ def _cfg():
     return cfg
 
 
-def _flux_curve(cfg, L, dw, we, lookup):
+def _flux_curve(cfg, L, dw, we, lookup, harm_scale=0.0, harm_phase=0.0):
     """Total mass flux (gas + buffered overflow) over the last cycle vs MA.
 
-    Mirrors make_figures._flux_curve so the fit uses the same forward model.
+    Uses the shifted-double-cosine forcing; ``harm_scale=0`` recovers the
+    single-cosine exactly. Mirrors make_figures._flux_curve otherwise.
     """
     D = L / 10.0
     P = cfg.physical.orbital_period
@@ -73,7 +76,10 @@ def _flux_curve(cfg, L, dw, we, lookup):
     rho_w = cfg.physical.liquid_density
     t_in = np.arange(100, P + 1, 200.0)
     R = 1.0 + dw / we
-    w_in = build_width_series(t_in, R, we, orbital_period=P, forcing_model="single-cosine")
+    w_in = build_width_series(t_in, R, we, orbital_period=P,
+                              forcing_model="shifted-double-cosine",
+                              second_harmonic_scale=harm_scale,
+                              second_harmonic_phase_deg=harm_phase)
     w, h, t, v = liquid_dynamics(w_in, t_in, L, cfg)
     _, phi, _, _ = lookup.query_vectorized(
         TB, np.clip(D - h, lookup.depth.min(), lookup.depth.max()),
@@ -110,24 +116,39 @@ def fit(lookup, cfg=None):
     ma_o, y_o, sig = np.loadtxt(_DATA, delimiter=",", skiprows=1).T
     w_o = 1.0 / sig ** 2
 
+    # harmonic combos: (scale, phase); scale=0 (single-cosine baseline) once.
+    combos = [(0.0, 0.0)] + [(float(s), float(p)) for s in HARM_SCALES if s > 0
+                             for p in HARM_PHASES]
     chi2 = np.full((len(DW_GRID), len(L_GRID)), np.inf)
     phi = np.full_like(chi2, np.nan)
     amp = np.full_like(chi2, np.nan)
     weff = np.full_like(chi2, np.nan)
+    hsc = np.full_like(chi2, np.nan)   # best 2f amplitude scale per cell
+    hph = np.full_like(chi2, np.nan)   # best 2f phase per cell
+    chi2_single = np.full_like(chi2, np.inf)  # scale=0 baseline per cell
     total = len(DW_GRID) * len(L_GRID)
     t0 = time.time()
     done = 0
     for i, dw in enumerate(DW_GRID):
         for j, L in enumerate(L_GRID):
             cfg.physical.equilibrium_depth = float(L)
+            # w_eff* from single-cosine attractor (swing is preserved by the
+            # forcing normalization, so the seal depth is ~harmonic-independent).
             res = evolve_geometry_coupled(cfg, float(dw), n_e=7,
                                           w_eff_max=0.06, w_floor=2e-3)
             if res.overflow and np.isfinite(res.w_eff_overflow):
                 we = float(res.w_eff_overflow)
-                MA_m, flux_m = _flux_curve(cfg, float(L), float(dw), we, lookup)
-                o = np.argsort(MA_m)
-                p0, A, c2 = _best_phi_A(MA_m[o], flux_m[o], ma_o, y_o, w_o)
-                chi2[i, j], phi[i, j], amp[i, j], weff[i, j] = c2, p0, A, we
+                weff[i, j] = we
+                for (sc, ph) in combos:
+                    MA_m, flux_m = _flux_curve(cfg, float(L), float(dw), we, lookup,
+                                               harm_scale=sc, harm_phase=ph)
+                    o = np.argsort(MA_m)
+                    p0, A, c2 = _best_phi_A(MA_m[o], flux_m[o], ma_o, y_o, w_o)
+                    if sc == 0.0:
+                        chi2_single[i, j] = c2
+                    if c2 < chi2[i, j]:
+                        chi2[i, j], phi[i, j], amp[i, j] = c2, p0, A
+                        hsc[i, j], hph[i, j] = sc, ph
             done += 1
             el = time.time() - t0
             eta = el / done * (total - done)
@@ -140,7 +161,9 @@ def fit(lookup, cfg=None):
     result = dict(
         dw=float(DW_GRID[bi]), L=float(L_GRID[bj]), w_eff=float(weff[bi, bj]),
         phi0=float(phi[bi, bj]), A=float(amp[bi, bj]),
+        harm_scale=float(hsc[bi, bj]), harm_phase=float(hph[bi, bj]),
         chi2=float(chi2[bi, bj]), dof=int(dof), chi2_red=float(chi2[bi, bj] / dof),
+        chi2_single_best=float(np.nanmin(chi2_single)),
         DW_GRID=DW_GRID, L_GRID=L_GRID, chi2_grid=chi2, bi=int(bi), bj=int(bj),
     )
     # Delta chi^2 = 1 marginal ranges along each grid axis through the optimum
@@ -164,8 +187,9 @@ def plot_overlay(result, lookup, cfg=None, out=None):
     ma_o, y_o, sig = np.loadtxt(_DATA, delimiter=",", skiprows=1).T
     dw, L, we = float(result["dw"]), float(result["L"]), float(result["w_eff"])
     phi0, A = float(result["phi0"]), float(result["A"])
+    hs, hp = float(result.get("harm_scale", 0.0)), float(result.get("harm_phase", 0.0))
     cfg.physical.equilibrium_depth = L
-    MA_m, flux_m = _flux_curve(cfg, L, dw, we, lookup)
+    MA_m, flux_m = _flux_curve(cfg, L, dw, we, lookup, harm_scale=hs, harm_phase=hp)
     o = np.argsort(MA_m); MA_m, flux_m = MA_m[o], flux_m[o]
     grid = np.linspace(0, 360, 721)
     model = A * np.interp((grid - phi0) % 360.0, MA_m, flux_m, period=360.0)
@@ -174,7 +198,7 @@ def plot_overlay(result, lookup, cfg=None, out=None):
                 capsize=2, label="observed (digitized, Ingersoll+ 2020)")
     ax.plot(grid, model, "-", color="tab:red", lw=1.8,
             label=(f"best fit: $\\Delta w$={dw*1e3:.0f} mm, $L$={L/1e3:.0f} km, "
-                   f"$\\phi_0$={phi0:.0f}$^\\circ$"))
+                   f"2f scale={hs:g}@{hp:g}$^\\circ$, $\\phi_0$={phi0:.0f}$^\\circ$"))
     ax.set_xlim(0, 360); ax.set_xticks(range(0, 361, 90))
     ax.set_xlabel("mean anomaly [deg]"); ax.set_ylabel("slab density [kg km$^{-1}$]")
     ax.set_title("Diurnal profile: model fit to observed emission")
@@ -210,7 +234,9 @@ def main():
     print(f"  w_eff*= {r['w_eff']*1e3:.2f} mm (on attractor)")
     print(f"  phi0 = {r['phi0']:.0f} deg")
     print(f"  A    = {r['A']:.3e} (slab per model-flux unit)")
-    print(f"  chi2/dof = {r['chi2']:.1f}/{r['dof']} = {r['chi2_red']:.2f}")
+    print(f"  2f harmonic scale={r['harm_scale']:g} phase={r['harm_phase']:g} deg")
+    print(f"  chi2/dof = {r['chi2']:.1f}/{r['dof']} = {r['chi2_red']:.2f}  "
+          f"(single-cosine best chi2/dof = {r['chi2_single_best']/r['dof']:.2f})")
     print(f"  saved -> {args.out}")
 
 

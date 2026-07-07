@@ -13,6 +13,7 @@
 %% To submit your paper:
 \documentclass[draft]{agujournal2019}
 \usepackage{url} %this package should fix any errors with URLs in refs.
+\usepackage{amsmath} % \tfrac etc.
 \usepackage{amssymb} % \gtrsim etc.
 \usepackage{lineno}
 \usepackage[inline]{trackchanges} %for better track changes. finalnew option will compile document with changes incorporated.
@@ -64,8 +65,9 @@
 % --- diurnal-fit results (Section~\ref{sec:fit}); values from run_fit.py ---
 \newcommand{\FITDW}{25}
 \newcommand{\FITL}{20}
-\newcommand{\FITPHI}{238}
-\newcommand{\FITCHI}{1.1}
+\newcommand{\FITPHI}{262}
+\newcommand{\FITCHI}{0.98}
+\newcommand{\FITCHISINGLE}{1.1}
 \newcommand{\placeholder}[1]{\medskip\noindent\fbox{\parbox{0.95\linewidth}{\textbf{[PLACEHOLDER]} \textit{#1}}}\medskip}
 
 \begin{document}
@@ -241,6 +243,15 @@ We assume a sinusoidal time dependence of crack width, with a minimum at the pha
 \end{equation}
 
 Here $t$ is the time where the model phase is at 0 degrees, $\delta(t)$ is the crack width, $\delta_{min}$ is the smallest width, and $R_\delta$ is the ratio of the maximum width to the smallest. $P$ is 33 hours, the period of Enceladus' rotation and revolution, being the same as it is tidally locked. Equivalently, the wall motion is characterized by its absolute swing $\Delta\delta = \delta_{max}-\delta_{min} = (R_\delta-1)\delta_{min}$, which is the quantity set by the tidal stress and is conserved as the crack seals (Section~\ref{sec:attractor}).
+
+The single cosine of Equation~\ref{Eq: Enceladus-1} captures the dominant diurnal term, but the tidal stress that flexes the tiger-stripe cracks is not a pure sinusoid at the orbital frequency: orbital eccentricity, physical libration, and the shell's elastic response contribute higher harmonics \cite{nimmo2014tidally}. For the diurnal fit of Section~\ref{sec:fit} we therefore admit a second (twice-orbital, $2f$) harmonic, replacing the profile of Equation~\ref{Eq: Enceladus-1} by a double-cosine
+\begin{linenomath*}
+\[
+\delta(t) \;\propto\; -\tfrac{2}{3}\cos\tfrac{2\pi t}{P}
+\;+\; \tfrac{\alpha}{6}\cos\!\Big(2\big(\tfrac{2\pi t}{P}-\phi_2\big)\Big),
+\]
+\end{linenomath*}
+rescaled to the same minimum and maximum width so the absolute swing $\Delta\delta$ --- and hence the self-sealing attractor of Section~\ref{sec:attractor} --- is unchanged; only the intra-cycle shape differs. The second-harmonic amplitude $\alpha$ and phase $\phi_2$ are free parameters of the fit, and $\alpha=0$ recovers Equation~\ref{Eq: Enceladus-1} exactly. \placeholder{Add a dedicated reference for the second-harmonic (double-cosine) tidal-forcing law if one is available beyond the general multi-harmonic tidal-stress treatment.}
 
 In Fig. \ref{fig:enc:1}, $L$ is the equilibrium depth of the liquid water column, $h$ is the water level height above the neutral water level, $D$ is the instantaneous depth of the water level, and the height $z$ is set to be zero at the bottom of the crack (where it connects to an ocean) and increases upwards. With the walls widening and narrowing, the liquid water moves vertically, and its velocity is a function of both time and height, $v=v(z,t)$. For convenience, we denote the velocities at the entrance of the crack and the gas-liquid interface as $v_0=v(0,t)$ and $v_h=v(h+L,t)$, respectively.
 
@@ -529,35 +540,44 @@ observed diurnal profile of Fig.~\ref{fig:enc:1} (slab density versus mean
 anomaly; \citeA{ingersoll2020time}). Placing the crack on the self-sealing
 attractor fixes the effective width at the overflow seal depth, leaving the
 absolute tidal swing $\Delta w$, the effective source depth $L$, a single global
-phase offset $\phi_0$, and an amplitude scale as free parameters; the amplitude
-absorbs the unknown slab-density-to-emission proportionality, so only the profile
-\emph{shape} (peak phases, peak ratio, trough depth) constrains the physics. The
-best fit (Figure~\ref{fig:enc:fit}) reproduces the full profile --- the sharp
-main peak, the broad secondary shoulder, the steep post-peak decline, and the
-deep trough --- with a reduced $\chi^2 = \FITCHI$, for a tidal swing
-$\Delta w \approx \FITDW$~mm and an effective source depth $L \approx \FITL$~km
-(global phase offset $\phi_0 \approx \FITPHI^\circ$). The minimum lies at the
-deep, large-swing end of the explored range, so these values are best read as a
-\emph{deep} source ($L \gtrsim 20$~km) with a swing of a few tens of millimetres
-rather than as a tightly pinned optimum.
+phase offset $\phi_0$, an amplitude scale, and --- through the second-harmonic
+forcing introduced above --- the $2f$ amplitude $\alpha$ and phase $\phi_2$ as
+free parameters; the amplitude absorbs the unknown slab-density-to-emission
+proportionality, so only the profile \emph{shape} (peak phases, peak ratio,
+trough depth) constrains the physics. A pure single-cosine forcing ($\alpha=0$)
+already fits reasonably (reduced $\chi^2=\FITCHISINGLE$), but admitting the second
+harmonic improves the fit at every depth and yields the best profile
+(Figure~\ref{fig:enc:fit}): it reproduces the sharp main peak, the broad
+secondary shoulder, the steep post-peak decline, and the deep trough with a
+reduced $\chi^2 = \FITCHI$, for a tidal swing $\Delta w \approx \FITDW$~mm, an
+effective source depth $L \approx \FITL$~km, a second-harmonic amplitude
+$\alpha \approx 1.5$ (phase $\phi_2\approx45^\circ$), and a global phase offset
+$\phi_0 \approx \FITPHI^\circ$. That a substantial $2f$ term is favoured is
+itself consistent with the multi-harmonic character of the tidal stress that
+drives the walls \cite{nimmo2014tidally}.
 
-The fit therefore selects a comparatively deep source. This is consistent with
-the observed profile being dominated by a single sharp main peak with only a
-weak, broad secondary (amplitude ratio ${\sim}2$--$3$): in the model this is the
-approach-peak-dominated, high-ratio regime that Section~\ref{sec:peaks} associates
-with greater depth, rather than the two-comparable-peak regime of a very shallow
-crack. The corresponding effective width on the attractor is
-$w_{\rm eff}\approx22$~mm, and the single global phase offset that aligns the model
-is the only phase freedom used. Two caveats bound this inference: the target is a
-digitized central-trend curve through a wide, multi-year scatter (so the weak
-secondary is poorly constrained), and the amplitude is a free scale, so the fit
-is driven by the profile shape and the relative peak heights, not by the absolute
-emission.
+The formal optimum lies at the deep, large-swing end of the explored range, so
+the depth is best read as a bound, $L \gtrsim \FITL$~km, rather than a pinned
+value; the acceptable region (reduced $\chi^2 \lesssim 1.3$) spans
+$L\approx10$--$20$~km. This deep, approach-peak-dominated regime is what the
+observed profile --- a single strong main peak with only a weak, broad secondary
+(amplitude ratio ${\sim}2$--$3$) --- selects, rather than the two-comparable-peak
+regime of a very shallow crack (Section~\ref{sec:peaks}). The shallower end of the
+acceptable range ($L\approx10$--$14$~km) is compatible with the reduced ice-shell
+thickness inferred for the south-polar terrain from gravity and topography, so the
+fit does not require a globally thick shell even though its formal minimum is deep.
+Two caveats bound the inference: the target is a digitized central-trend curve
+through a wide, multi-year scatter (so the weak secondary is poorly constrained),
+and the amplitude is a free scale, so the fit is driven by the profile shape and
+relative peak heights, not the absolute emission.
 
-\placeholder{This deep-source result should be reconciled with the shallow-source
-reading in the Conclusions, which was based on the mere presence of two peaks; the
-quantitative profile fit instead favours a deep, approach-dominated source.
-Revisit and soften that claim once this fit is finalized.}
+\placeholder{Develop the implications of the fitted parameters: (i) reconcile the
+deep formal optimum ($L\gtrsim20$~km) with the shallow-source reading of the
+Conclusions and with the reduced south-polar shell thickness --- add the relevant
+ice-shell-thickness references (e.g. gravity/topography inversions of the SPT);
+(ii) interpret the favoured second-harmonic amplitude in terms of the tidal-stress
+harmonic content. Asserting nothing here beyond ``compatible with'' until these
+references and the depth reconciliation are settled.}
 
 \begin{figure}[hbt!]
     \centering
@@ -566,8 +586,10 @@ Revisit and soften that claim once this fit is finalized.}
     observed slab-density profile (black points; error bars are the per-bin
     scatter spread, not measurement error; \citeA{ingersoll2020time},
     Fig.~\ref{fig:enc:1}). The crack is on the self-sealing attractor; free
-    parameters are the tidal swing $\Delta w$, effective source depth $L$, a
-    single global phase offset, and an overall amplitude.}
+    parameters are the tidal swing $\Delta w$, effective source depth $L$, the
+    second-harmonic (double-cosine) amplitude and phase, a single global phase
+    offset, and an overall amplitude. The double-cosine forcing improves the fit
+    at every depth over a pure single cosine.}
     \label{fig:enc:fit}
 \end{figure}
 
