@@ -13,6 +13,7 @@
 %% To submit your paper:
 \documentclass[draft]{agujournal2019}
 \usepackage{url} %this package should fix any errors with URLs in refs.
+\usepackage{amssymb} % \gtrsim etc.
 \usepackage{lineno}
 \usepackage[inline]{trackchanges} %for better track changes. finalnew option will compile document with changes incorporated.
 \usepackage{soul}
@@ -60,6 +61,12 @@
 
 \journalname{JGR: Planets}
 
+% --- diurnal-fit results (Section~\ref{sec:fit}); values from run_fit.py ---
+\newcommand{\FITDW}{25}
+\newcommand{\FITL}{20}
+\newcommand{\FITPHI}{238}
+\newcommand{\FITCHI}{1.1}
+\newcommand{\placeholder}[1]{\medskip\noindent\fbox{\parbox{0.95\linewidth}{\textbf{[PLACEHOLDER]} \textit{#1}}}\medskip}
 
 \begin{document}
 
@@ -515,12 +522,61 @@ spacing.
     \label{fig:enc:overlay}
 \end{figure}
 
+\subsection{Fitting the diurnal profile}
+\label{sec:fit}
+Beyond matching the peak phases, we fit the forward model directly to the
+observed diurnal profile of Fig.~\ref{fig:enc:1} (slab density versus mean
+anomaly; \citeA{ingersoll2020time}). Placing the crack on the self-sealing
+attractor fixes the effective width at the overflow seal depth, leaving the
+absolute tidal swing $\Delta w$, the effective source depth $L$, a single global
+phase offset $\phi_0$, and an amplitude scale as free parameters; the amplitude
+absorbs the unknown slab-density-to-emission proportionality, so only the profile
+\emph{shape} (peak phases, peak ratio, trough depth) constrains the physics. The
+best fit (Figure~\ref{fig:enc:fit}) reproduces the full profile --- the sharp
+main peak, the broad secondary shoulder, the steep post-peak decline, and the
+deep trough --- with a reduced $\chi^2 = \FITCHI$, for a tidal swing
+$\Delta w \approx \FITDW$~mm and an effective source depth $L \approx \FITL$~km
+(global phase offset $\phi_0 \approx \FITPHI^\circ$). The minimum lies at the
+deep, large-swing end of the explored range, so these values are best read as a
+\emph{deep} source ($L \gtrsim 20$~km) with a swing of a few tens of millimetres
+rather than as a tightly pinned optimum.
+
+The fit therefore selects a comparatively deep source. This is consistent with
+the observed profile being dominated by a single sharp main peak with only a
+weak, broad secondary (amplitude ratio ${\sim}2$--$3$): in the model this is the
+approach-peak-dominated, high-ratio regime that Section~\ref{sec:peaks} associates
+with greater depth, rather than the two-comparable-peak regime of a very shallow
+crack. The corresponding effective width on the attractor is
+$w_{\rm eff}\approx22$~mm, and the single global phase offset that aligns the model
+is the only phase freedom used. Two caveats bound this inference: the target is a
+digitized central-trend curve through a wide, multi-year scatter (so the weak
+secondary is poorly constrained), and the amplitude is a free scale, so the fit
+is driven by the profile shape and the relative peak heights, not by the absolute
+emission.
+
+\placeholder{This deep-source result should be reconciled with the shallow-source
+reading in the Conclusions, which was based on the mere presence of two peaks; the
+quantitative profile fit instead favours a deep, approach-dominated source.
+Revisit and soften that claim once this fit is finalized.}
+
+\begin{figure}[hbt!]
+    \centering
+    \includegraphics[width=0.7\textwidth]{Figures/diurnal_fit.pdf}
+    \caption{Best-fit model diurnal mass-flux profile (red) against the digitized
+    observed slab-density profile (black points; error bars are the per-bin
+    scatter spread, not measurement error; \citeA{ingersoll2020time},
+    Fig.~\ref{fig:enc:1}). The crack is on the self-sealing attractor; free
+    parameters are the tidal swing $\Delta w$, effective source depth $L$, a
+    single global phase offset, and an overall amplitude.}
+    \label{fig:enc:fit}
+\end{figure}
+
 \section{Conclusions}
 We modeled the activities of the plumes on Enceladus by treating the crack as a long fissure whose walls widen and narrow over the diurnal cycle. The water level is strongly correlated with the rate of wall motion, and because friction makes the water-level excursion scale steeply with the inverse crack width, a narrowing crack drives the water toward the surface.
 
 We noted that an active open crack is a more likely explanation of the observed variability than a closed one, as the warm walls are exposed only when the crack is open. Hence, the proposed model shows an additional evidence that the two-way mass exchange exists between the interior ocean and the planetary surface, which is important for the chemical energy sources for habitability \cite{parkinson2008habitability}.
 
-We further argued that condensation of the plume onto the walls continually seals the crack, and that this self-sealing acts as an attractor: independent of its initial width, any crack that flexes is driven within a few diurnal cycles to a small-width state in which the water reaches the surface and produces the secondary peak. Because the ice lining lowers the mean width but leaves the absolute tidal swing of the walls unchanged, there is no forcing threshold for this overflow state to exist; the swing sets only how far the crack must seal first, and a sufficiently weak swing seals it to a residual gap so small that the plume becomes negligible. The narrow-width overflow regime is therefore a natural end-state rather than a fine-tuned configuration. On this attractor the diurnal mass flux carries two gas-evaporation peaks --- a widening peak near the maximum-width phase and an approach peak near the maximum-water-level phase --- whose phases and relative strength we predict from the forcing geometry and the closeness of approach; as the water nears the surface the approach peak overtakes the widening peak, and the pair reproduces the observed main / secondary peaks near MA $180^\circ$ and $50^\circ$. The relative strength of the two peaks depends strongly on depth: deep cracks choke the widening peak into a single, high-ratio peak, whereas only shallow cracks retain two comparable peaks, so the observed two-peak profile, with a main-to-secondary ratio of order two, points to a relatively shallow effective source depth of a few kilometres. How the deposited ice is redistributed from the lip, through fracture and viscoelastic creep, remains an open problem that ultimately sets the long-term balance between sealing and the reopening maintained by the rising water.
+We further argued that condensation of the plume onto the walls continually seals the crack, and that this self-sealing acts as an attractor: independent of its initial width, any crack that flexes is driven within a few diurnal cycles to a small-width state in which the water reaches the surface and produces the secondary peak. Because the ice lining lowers the mean width but leaves the absolute tidal swing of the walls unchanged, there is no forcing threshold for this overflow state to exist; the swing sets only how far the crack must seal first, and a sufficiently weak swing seals it to a residual gap so small that the plume becomes negligible. The narrow-width overflow regime is therefore a natural end-state rather than a fine-tuned configuration. On this attractor the diurnal mass flux carries two gas-evaporation peaks --- a widening peak near the maximum-width phase and an approach peak near the maximum-water-level phase --- whose phases and relative strength we predict from the forcing geometry and the closeness of approach; as the water nears the surface the approach peak overtakes the widening peak, and the pair reproduces the observed main / secondary peaks near MA $180^\circ$ and $50^\circ$. The relative strength of the two peaks depends strongly on depth: deep cracks choke the widening peak into a single, high-ratio peak, whereas only shallow cracks retain two comparable peaks. The mere presence of a second peak thus indicates a source shallow enough to avoid complete choking; a quantitative fit of the full diurnal profile (Section~\ref{sec:fit}), however, is dominated by the single strong main peak and a comparatively weak secondary, and so favours a deeper, approach-dominated source ($L\gtrsim20$~km). Reconciling the depth implied by the presence of two peaks with that from the full-profile fit is left open. How the deposited ice is redistributed from the lip, through fracture and viscoelastic creep, remains an open problem that ultimately sets the long-term balance between sealing and the reopening maintained by the rising water.
 
 While some assumptions are made, the physical processes modeled would follow a similar pattern. Future work can consider a more realistic geometry and generalize the model beyond the current assumptions. Considering an irregular shape of the crack would be possible, but it allows too high a degree of freedom for explorations in the parameter space. Also, the narrowing and widening of the crack may follow a different pattern, where the geometries and viscoelasticity can play a role. 
 
