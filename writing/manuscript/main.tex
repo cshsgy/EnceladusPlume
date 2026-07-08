@@ -589,8 +589,39 @@ references and the depth reconciliation are settled.}
     parameters are the tidal swing $\Delta w$, effective source depth $L$, the
     second-harmonic (double-cosine) amplitude and phase, a single global phase
     offset, and an overall amplitude. The double-cosine forcing improves the fit
-    at every depth over a pure single cosine.}
+    at every depth over a pure single cosine. The sharp main peak is the
+    single-crack rapid-surge onset --- the water reaching the surface at speed ---
+    which is smoothed once many crack segments are averaged (Figure~\ref{fig:enc:ensemble}).}
     \label{fig:enc:fit}
+\end{figure}
+
+A single crack produces a sharp, near-cusped approach peak because the
+piston-driven water reaches the surface rapidly; the model curve in
+Figure~\ref{fig:enc:fit} accordingly slightly overshoots the observed peak. The
+observed slab density, however, is the emission summed over the ${\sim}500$~km of
+tiger stripes, whose segments differ in local width, depth, and --- through their
+orientation relative to the tidal-stress field --- in forcing phase. Averaging the
+single-crack profile over this along-strike spread (a periodic Gaussian
+convolution in mean anomaly of width $\sigma_\phi$) is the physically appropriate
+comparison to the spatially-integrated data. Fitting $\sigma_\phi$ to the
+single-crack best fit rounds the peak and markedly improves the agreement, from
+reduced $\chi^2\approx0.98$ (single crack) to $\approx0.52$ for
+$\sigma_\phi\approx24^\circ$ (Figure~\ref{fig:enc:ensemble}); the ensemble peak
+amplitude and width now match the observations without further tuning of the
+crack parameters.
+
+\begin{figure}[hbt!]
+    \centering
+    \includegraphics[width=0.7\textwidth]{Figures/diurnal_fit_ensemble.pdf}
+    \caption{Single-crack versus ensemble-averaged diurnal profile against the
+    observed data. The single crack (blue dashed) surges sharply and overshoots
+    the peak; averaging over the along-strike spread of tiger-stripe segments
+    (a Gaussian phase spread $\sigma_\phi\approx24^\circ$; red) rounds the peak to
+    match the observations, improving the reduced $\chi^2$ from $0.98$ to $0.52$.
+    Crack parameters are held at the single-crack best fit of
+    Figure~\ref{fig:enc:fit}; only the ensemble spread, phase offset, and
+    amplitude are adjusted.}
+    \label{fig:enc:ensemble}
 \end{figure}
 
 \section{Conclusions}

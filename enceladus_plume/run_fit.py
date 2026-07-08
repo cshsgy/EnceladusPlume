@@ -178,6 +178,99 @@ def fit(lookup, cfg=None):
     return result
 
 
+def _ensemble_smooth(MA, flux, sigma_deg):
+    """Ensemble-average the flux over a Gaussian spread of forcing phase.
+
+    The observed emission sums over ~500 km of tiger-stripe segments that differ
+    in local forcing phase; averaging the single-crack curve over that spread is
+    a periodic Gaussian convolution in mean anomaly (width ``sigma_deg``).
+    Returns a uniform (grid, smoothed-flux). sigma_deg<=0 returns the raw curve.
+    """
+    g = np.linspace(0.0, 360.0, 720, endpoint=False)
+    f = np.interp(g, MA, flux, period=360.0)
+    if sigma_deg <= 0:
+        return g, f
+    dx = g[1] - g[0]
+    half = int(np.ceil(4.0 * sigma_deg / dx))
+    k = np.arange(-half, half + 1) * dx
+    w = np.exp(-0.5 * (k / sigma_deg) ** 2); w /= w.sum()
+    fs = np.convolve(np.concatenate([f, f, f]), w, mode="same")[len(f):2 * len(f)]
+    return g, fs
+
+
+def fit_ensemble(result, lookup, cfg=None):
+    """Fit the along-strike phase-spread width to the base best-fit model.
+
+    Holds (dw, L, w_eff, harmonic) at the single-crack best fit and scans the
+    ensemble spread sigma (deg), re-optimising phi0 and A. Returns the best
+    sigma, its chi2, and the single-crack (sigma=0) chi2 for comparison.
+    """
+    cfg = cfg or _cfg()
+    ma_o, y_o, sig = np.loadtxt(_DATA, delimiter=",", skiprows=1).T
+    w_o = 1.0 / sig ** 2
+    dw, L, we = float(result["dw"]), float(result["L"]), float(result["w_eff"])
+    hs, hp = float(result.get("harm_scale", 0.0)), float(result.get("harm_phase", 0.0))
+    cfg.physical.equilibrium_depth = L
+    MA_m, flux_m = _flux_curve(cfg, L, dw, we, lookup, harm_scale=hs, harm_phase=hp)
+    o = np.argsort(MA_m); MA_m, flux_m = MA_m[o], flux_m[o]
+    best = (0.0, np.inf, np.nan, np.nan)
+    c0 = np.inf
+    for sigma in np.arange(0.0, 40.1, 1.0):
+        g, fs = _ensemble_smooth(MA_m, flux_m, sigma)
+        p0, A, c2 = _best_phi_A(g, fs, ma_o, y_o, w_o)
+        if sigma == 0.0:
+            c0 = c2
+        if c2 < best[1]:
+            best = (float(sigma), c2, float(p0), float(A))
+    dof = len(ma_o) - 5  # + sigma vs the single-crack's 4
+    return dict(sigma=best[0], chi2=best[1], chi2_red=best[1] / dof, dof=int(dof),
+                phi0=best[2], A=best[3], chi2_single=c0, chi2_single_red=c0 / (dof + 1),
+                dw=dw, L=L, w_eff=we, harm_scale=hs, harm_phase=hp)
+
+
+def plot_ensemble(result, lookup, cfg=None, out=None):
+    """Fig. 10: single-crack vs ensemble-averaged fit to the observed profile."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    cfg = cfg or _cfg()
+    e = fit_ensemble(result, lookup, cfg)
+    ma_o, y_o, sig = np.loadtxt(_DATA, delimiter=",", skiprows=1).T
+    dw, L, we = e["dw"], e["L"], e["w_eff"]
+    cfg.physical.equilibrium_depth = L
+    MA_m, flux_m = _flux_curve(cfg, L, dw, we, lookup,
+                               harm_scale=e["harm_scale"], harm_phase=e["harm_phase"])
+    o = np.argsort(MA_m); MA_m, flux_m = MA_m[o], flux_m[o]
+    # single-crack (sigma=0): reuse its own best phi0/A
+    _, fs0 = _ensemble_smooth(MA_m, flux_m, 0.0)
+    from numpy import interp
+    w_o = 1.0 / sig ** 2
+    p00, A0, _ = _best_phi_A(MA_m, flux_m, ma_o, y_o, w_o)
+    gcur = np.linspace(0, 360, 721)
+    single = A0 * np.interp((gcur - p00) % 360.0, MA_m, flux_m, period=360.0)
+    g, fse = _ensemble_smooth(MA_m, flux_m, e["sigma"])
+    ens = e["A"] * np.interp((gcur - e["phi0"]) % 360.0, g, fse, period=360.0)
+    fig, ax = plt.subplots(figsize=(6.6, 4.3))
+    ax.errorbar(ma_o, y_o, yerr=sig, fmt="o", ms=4, color="k", lw=1, capsize=2,
+                label="observed (digitized, Ingersoll+ 2020)")
+    ax.plot(gcur, single, "--", color="tab:blue", lw=1.5,
+            label=f"single crack ($\\chi^2$/dof={e['chi2_single_red']:.2f})")
+    ax.plot(gcur, ens, "-", color="tab:red", lw=1.9,
+            label=(f"ensemble, $\\sigma_\\phi$={e['sigma']:.0f}$^\\circ$ "
+                   f"($\\chi^2$/dof={e['chi2_red']:.2f})"))
+    ax.set_xlim(0, 360); ax.set_xticks(range(0, 361, 90))
+    ax.set_xlabel("mean anomaly [deg]"); ax.set_ylabel("slab density [kg km$^{-1}$]")
+    ax.set_title("Ensemble averaging over tiger-stripe segments")
+    ax.legend(fontsize=8); ax.grid(alpha=0.3)
+    out = out or os.path.normpath(os.path.join(
+        _HERE, "..", "writing", "manuscript", "Figures", "diurnal_fit_ensemble.pdf"))
+    fig.tight_layout(); fig.savefig(out)
+    print(f"wrote {out}")
+    print(f"  ensemble sigma_phi = {e['sigma']:.0f} deg   "
+          f"chi2/dof {e['chi2_single_red']:.2f} (single) -> {e['chi2_red']:.2f} (ensemble)")
+    return e
+
+
 def plot_overlay(result, lookup, cfg=None, out=None):
     """Data-vs-model overlay for the best fit (recomputes one flux curve)."""
     import matplotlib
@@ -215,7 +308,13 @@ def main():
     ap.add_argument("--out", default=os.path.join(tempfile.gettempdir(), "diurnal_fit.npz"))
     ap.add_argument("--plot-only", action="store_true",
                     help="skip fitting; load --out and just (re)draw the overlay")
+    ap.add_argument("--ensemble", action="store_true",
+                    help="skip fitting; load --out, fit the ensemble spread, draw Fig. 10")
     args = ap.parse_args()
+    if args.ensemble:
+        r = dict(np.load(args.out))
+        plot_ensemble(r, GasLookupTable(args.lookup, clean=True))
+        return
     if args.plot_only:
         r = dict(np.load(args.out))
         plot_overlay(r, GasLookupTable(args.lookup, clean=True))
