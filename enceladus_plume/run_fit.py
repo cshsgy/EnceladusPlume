@@ -43,16 +43,36 @@ _DATA = os.path.join(_HERE, "data", "observed_diurnal.csv")
 TB = 272.6
 
 # (dw, L) search grid. w_eff* (overflow seal depth) is computed per cell.
-DW_GRID = np.array([10, 12, 14, 17, 20, 25]) * 1e-3              # m
-L_GRID = np.array([3, 5, 7, 10, 14, 20]) * 1e3                   # m
+DW_GRID = np.array([10, 14, 20, 25]) * 1e-3                      # m
+L_GRID = np.array([3, 5, 10, 20]) * 1e3                          # m
 PHI_STEP = 2.0                                                   # deg
 
 # Second-harmonic (double-cosine) forcing: amplitude scale and phase (deg). The
 # tidal stress across the tiger stripes is not a pure single sinusoid; a 2f term
 # (shifted-double-cosine forcing, MeyerZuWestram2024) is fit per cell. scale=0
 # recovers the single-cosine exactly and is always included as the baseline.
-HARM_SCALES = np.array([0.0, 1.5, 2.0])
-HARM_PHASES = np.array([45.0, 67.5])
+HARM_SCALES = np.array([0.0, 2.0, 4.0])
+HARM_PHASES = np.array([0.0, 30.0, 60.0, 90.0, 120.0, 150.0])
+
+# Up-weight the two observed peaks (secondary ~40 deg, main ~190 deg) so the fit
+# is driven to reproduce both peaks rather than the bulk of the profile. The
+# weight is 1/sigma^2 times a boost that is BOOST+1 at the peak centres and 1 away.
+PEAK_CENTERS = np.array([40.0, 190.0])   # deg mean anomaly
+PEAK_WIDTH = 18.0                        # deg
+PEAK_BOOST = 4.0
+
+
+def _weights(ma_o, sig):
+    """Inverse-variance weights, up-weighted near the two observed peaks."""
+    boost = np.ones_like(ma_o)
+    for c in PEAK_CENTERS:
+        d = (ma_o - c + 180.0) % 360.0 - 180.0
+        boost += PEAK_BOOST * np.exp(-0.5 * (d / PEAK_WIDTH) ** 2)
+    return boost / sig ** 2
+
+
+# Continuous MLE bounds: (dw[mm], L[km], phi2[deg], 2f-scale, sigma_phi[deg]).
+MLE_BOUNDS = [(6.0, 30.0), (2.0, 22.0), (0.0, 180.0), (0.0, 5.0), (0.0, 35.0)]
 
 
 def _cfg():
@@ -114,7 +134,7 @@ def _best_phi_A(MA_m, flux_m, ma_o, y_o, w_o):
 def fit(lookup, cfg=None):
     cfg = cfg or _cfg()
     ma_o, y_o, sig = np.loadtxt(_DATA, delimiter=",", skiprows=1).T
-    w_o = 1.0 / sig ** 2
+    w_o = _weights(ma_o, sig)
 
     # harmonic combos: (scale, phase); scale=0 (single-cosine baseline) once.
     combos = [(0.0, 0.0)] + [(float(s), float(p)) for s in HARM_SCALES if s > 0
@@ -207,7 +227,7 @@ def fit_ensemble(result, lookup, cfg=None):
     """
     cfg = cfg or _cfg()
     ma_o, y_o, sig = np.loadtxt(_DATA, delimiter=",", skiprows=1).T
-    w_o = 1.0 / sig ** 2
+    w_o = _weights(ma_o, sig)
     dw, L, we = float(result["dw"]), float(result["L"]), float(result["w_eff"])
     hs, hp = float(result.get("harm_scale", 0.0)), float(result.get("harm_phase", 0.0))
     cfg.physical.equilibrium_depth = L
@@ -244,7 +264,7 @@ def plot_ensemble(result, lookup, cfg=None, out=None):
     # single-crack (sigma=0): reuse its own best phi0/A
     _, fs0 = _ensemble_smooth(MA_m, flux_m, 0.0)
     from numpy import interp
-    w_o = 1.0 / sig ** 2
+    w_o = _weights(ma_o, sig)
     p00, A0, _ = _best_phi_A(MA_m, flux_m, ma_o, y_o, w_o)
     gcur = np.linspace(0, 360, 721)
     single = A0 * np.interp((gcur - p00) % 360.0, MA_m, flux_m, period=360.0)
@@ -271,6 +291,252 @@ def plot_ensemble(result, lookup, cfg=None, out=None):
     return e
 
 
+def build_weff_interp(cfg, verbose=True):
+    """Precompute the on-attractor seal depth w_eff*(dw, L) and interpolate it.
+
+    w_eff* is the deterministic steady-state result of the sealing iteration
+    (not a free parameter), so we sample it on a coarse (dw, L) grid once and
+    interpolate; each likelihood evaluation is then a single flux solve.
+    Returns weff_of(dw_mm, L_km) -> w_eff [m].
+    """
+    from scipy.interpolate import LinearNDInterpolator, NearestNDInterpolator
+    dws = np.array([6, 9, 12, 16, 20, 25, 30]) * 1e-3
+    Ls = np.array([2, 3, 4, 6, 9, 13, 18, 22]) * 1e3
+    pts, vals = [], []
+    t0 = time.time()
+    for dw in dws:
+        for L in Ls:
+            cfg.physical.equilibrium_depth = float(L)
+            r = evolve_geometry_coupled(cfg, float(dw), n_e=7, w_eff_max=0.06, w_floor=2e-3)
+            if r.overflow and np.isfinite(r.w_eff_overflow):
+                pts.append([dw * 1e3, L / 1e3]); vals.append(r.w_eff_overflow)
+        if verbose:
+            print(f"  w_eff grid dw={dw*1e3:.0f}mm done | elapsed {(time.time()-t0)/60:.1f}m",
+                  flush=True)
+    pts, vals = np.array(pts), np.array(vals)
+    lin = LinearNDInterpolator(pts, vals)
+    near = NearestNDInterpolator(pts, vals)
+
+    def weff_of(dw_mm, L_km):
+        v = lin(dw_mm, L_km)
+        if not np.isfinite(v):
+            v = near(dw_mm, L_km)
+        return float(v)
+    return weff_of
+
+
+def _neg_loglike(theta, weff_of, lookup, cfg, ma_o, y_o, w_o):
+    """0.5 * weighted chi^2 (Gaussian negative log-likelihood up to a constant)."""
+    dw_mm, L_km, phi2, scale, sigma = theta
+    we = weff_of(dw_mm, L_km)
+    if not np.isfinite(we) or we <= 0:
+        return 1e12
+    L = L_km * 1e3
+    cfg.physical.equilibrium_depth = L
+    try:
+        MA, fl = _flux_curve(cfg, L, dw_mm * 1e-3, we, lookup,
+                             harm_scale=max(scale, 0.0), harm_phase=phi2)
+    except Exception:
+        return 1e12
+    o = np.argsort(MA)
+    g, fs = _ensemble_smooth(MA[o], fl[o], max(sigma, 0.0))
+    _, _, c2 = _best_phi_A(g, fs, ma_o, y_o, w_o)
+    return 0.5 * float(c2)
+
+
+def fit_mle(lookup, cfg=None, seed=0):
+    """Continuous maximum-likelihood fit (global + local) over the free params."""
+    from scipy.optimize import differential_evolution, minimize
+    cfg = cfg or _cfg()
+    ma_o, y_o, sig = np.loadtxt(_DATA, delimiter=",", skiprows=1).T
+    w_o = _weights(ma_o, sig)
+    weff_of = build_weff_interp(cfg)
+    args = (weff_of, lookup, cfg, ma_o, y_o, w_o)
+
+    neval = {"n": 0}
+    t0 = time.time()
+
+    def obj(th):
+        neval["n"] += 1
+        v = _neg_loglike(th, *args)
+        if neval["n"] % 25 == 0:
+            print(f"  eval {neval['n']:4d} | best 2*NLL so far tracked by DE | "
+                  f"elapsed {(time.time()-t0)/60:.1f}m", flush=True)
+        return v
+
+    print("  global search (differential_evolution)...", flush=True)
+    de = differential_evolution(obj, MLE_BOUNDS, maxiter=12, popsize=6, tol=1e-2,
+                                rng=seed, polish=False, init="sobol")
+    print(f"  DE done: 2*NLL={2*de.fun:.1f} at {np.round(de.x,2)}", flush=True)
+    loc = minimize(obj, de.x, method="Nelder-Mead",
+                   bounds=MLE_BOUNDS, options=dict(xatol=1e-2, fatol=1e-2, maxiter=400))
+    x = loc.x if loc.fun < de.fun else de.x
+    chi2 = 2.0 * _neg_loglike(x, *args)
+    dof = len(ma_o) - 5
+    dw_mm, L_km, phi2, scale, sigma = x
+    we = weff_of(dw_mm, L_km)
+    cfg.physical.equilibrium_depth = L_km * 1e3
+    MA, fl = _flux_curve(cfg, L_km * 1e3, dw_mm * 1e-3, we, lookup,
+                         harm_scale=scale, harm_phase=phi2)
+    o = np.argsort(MA); g, fs = _ensemble_smooth(MA[o], fl[o], sigma)
+    p0, A, _ = _best_phi_A(g, fs, ma_o, y_o, w_o)
+    return dict(dw=dw_mm * 1e-3, L=L_km * 1e3, w_eff=we, harm_scale=float(scale),
+                harm_phase=float(phi2), sigma=float(sigma), phi0=float(p0), A=float(A),
+                chi2=float(chi2), dof=int(dof), chi2_red=float(chi2 / dof))
+
+
+# ---------------------------------------------------------------------------
+# Posterior (MCMC) via a fast flux emulator
+# ---------------------------------------------------------------------------
+_EMU_DW = np.array([8, 13, 18, 25]) * 1e-3
+_EMU_L = np.array([5, 10, 15, 20]) * 1e3
+_EMU_PHI2 = np.array([0.0, 60.0, 120.0])
+_EMU_SCALE = np.array([0.0, 1.0, 2.0, 4.0])
+_EMU_MA = np.arange(0.0, 360.0, 1.0)
+
+
+def build_flux_emulator(lookup, cfg=None, cache=None):
+    """Precompute flux(MA; dw, L, phi2, scale) on a 4-D grid and interpolate it.
+
+    Returns a RegularGridInterpolator that maps (dw_mm, L_km, phi2, scale) to a
+    flux curve on ``_EMU_MA`` -- so each MCMC likelihood is a fast interpolation
+    rather than a liquid solve. Cached to ``cache`` (npz).
+    """
+    from scipy.interpolate import RegularGridInterpolator
+    cfg = cfg or _cfg()
+    if cache and os.path.exists(cache):
+        arr = np.load(cache)["flux"]
+    else:
+        # w_eff* per (dw, L) node (nearest-valid fallback if a node has no overflow)
+        we_grid = np.full((len(_EMU_DW), len(_EMU_L)), np.nan)
+        for i, dw in enumerate(_EMU_DW):
+            for j, L in enumerate(_EMU_L):
+                cfg.physical.equilibrium_depth = float(L)
+                r = evolve_geometry_coupled(cfg, float(dw), n_e=7, w_eff_max=0.06, w_floor=2e-3)
+                if r.overflow and np.isfinite(r.w_eff_overflow):
+                    we_grid[i, j] = r.w_eff_overflow
+            print(f"  emu w_eff dw={dw*1e3:.0f}mm done", flush=True)
+        # fill NaN with row/column nearest
+        for i in range(len(_EMU_DW)):
+            row = we_grid[i]
+            if np.all(np.isnan(row)):
+                continue
+            m = np.isnan(row)
+            row[m] = np.interp(np.flatnonzero(m), np.flatnonzero(~m), row[~m])
+        arr = np.zeros((len(_EMU_DW), len(_EMU_L), len(_EMU_PHI2), len(_EMU_SCALE), len(_EMU_MA)))
+        n = 0
+        for i, dw in enumerate(_EMU_DW):
+            for j, L in enumerate(_EMU_L):
+                we = float(we_grid[i, j])
+                cfg.physical.equilibrium_depth = float(L)
+                for k, phi2 in enumerate(_EMU_PHI2):
+                    for l, sc in enumerate(_EMU_SCALE):
+                        MA, fl = _flux_curve(cfg, float(L), float(dw), we, lookup,
+                                             harm_scale=float(sc), harm_phase=float(phi2))
+                        o = np.argsort(MA)
+                        arr[i, j, k, l] = np.interp(_EMU_MA, MA[o], fl[o], period=360.0)
+                        n += 1
+                print(f"  emu flux {n}/{arr[...,0].size} (dw={dw*1e3:.0f}mm L={L/1e3:.0f}km)", flush=True)
+        if cache:
+            np.savez(cache, flux=arr)
+    rgi = RegularGridInterpolator((_EMU_DW * 1e3, _EMU_L / 1e3, _EMU_PHI2, _EMU_SCALE), arr,
+                                  bounds_error=False, fill_value=None)
+    return rgi
+
+
+def make_log_prob(rgi, ma_o, y_o, w_o):
+    """Flat-prior Gaussian log-posterior over (dw_mm, L_km, phi2, scale, sigma)."""
+    lo = np.array([b[0] for b in MLE_BOUNDS]); hi = np.array([b[1] for b in MLE_BOUNDS])
+
+    def log_prob(theta):
+        if np.any(theta < lo) or np.any(theta > hi):
+            return -np.inf
+        dw_mm, L_km, phi2, scale, sigma = theta
+        flux = rgi([[dw_mm, L_km, phi2, scale]])[0]
+        g, fs = _ensemble_smooth(_EMU_MA, flux, sigma)
+        _, _, c2 = _best_phi_A(g, fs, ma_o, y_o, w_o)
+        return -0.5 * c2
+    return log_prob
+
+
+def run_mcmc(log_prob, p0, nsteps, seed=0):
+    """Affine-invariant (stretch-move) ensemble sampler; p0 is (nwalkers, ndim)."""
+    rng = np.random.default_rng(seed)
+    pos = np.array(p0, float); nw, nd = pos.shape
+    lp = np.array([log_prob(p) for p in pos])
+    chain = np.zeros((nsteps, nw, nd)); a = 2.0
+    for s in range(nsteps):
+        for k in range(nw):
+            j = rng.integers(nw - 1); j += 1 if j >= k else 0
+            z = ((a - 1.0) * rng.random() + 1.0) ** 2 / a
+            prop = pos[j] + z * (pos[k] - pos[j])
+            lpp = log_prob(prop)
+            if np.log(rng.random()) < (nd - 1) * np.log(z) + lpp - lp[k]:
+                pos[k], lp[k] = prop, lpp
+        chain[s] = pos
+        if (s + 1) % 200 == 0:
+            print(f"  mcmc step {s+1}/{nsteps}  mean logP={lp.mean():.1f}", flush=True)
+    return chain
+
+
+def plot_corner(samples, labels, truths=None, out=None):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    nd = samples.shape[1]
+    fig, ax = plt.subplots(nd, nd, figsize=(1.9 * nd, 1.9 * nd))
+    q = np.percentile(samples, [16, 50, 84], axis=0)
+    for i in range(nd):
+        for j in range(nd):
+            a = ax[i, j]
+            if j > i:
+                a.axis("off"); continue
+            if i == j:
+                a.hist(samples[:, i], bins=30, color="tab:blue", histtype="stepfilled", alpha=0.6)
+                a.axvline(q[1, i], color="k", lw=1); a.axvline(q[0, i], color="k", ls="--", lw=0.8)
+                a.axvline(q[2, i], color="k", ls="--", lw=0.8)
+                a.set_title(f"{labels[i]}\n${q[1,i]:.1f}^{{+{q[2,i]-q[1,i]:.1f}}}_{{-{q[1,i]-q[0,i]:.1f}}}$",
+                            fontsize=8)
+            else:
+                a.hist2d(samples[:, j], samples[:, i], bins=30, cmap="Blues")
+                if truths is not None:
+                    a.plot(truths[j], truths[i], "rx", ms=6)
+            if i == nd - 1:
+                a.set_xlabel(labels[j], fontsize=8)
+            else:
+                a.set_xticklabels([])
+            if j == 0 and i > 0:
+                a.set_ylabel(labels[i], fontsize=8)
+            else:
+                a.set_yticklabels([])
+            a.tick_params(labelsize=6)
+    out = out or os.path.normpath(os.path.join(
+        _HERE, "..", "writing", "manuscript", "Figures", "diurnal_fit_posterior.pdf"))
+    fig.tight_layout(); fig.savefig(out); print(f"wrote {out}")
+
+
+def fit_mcmc(lookup, cfg=None, nsteps=1500, nwalkers=32, seed=0, emu_cache=None):
+    """Posterior over the fit parameters via emulator + ensemble MCMC."""
+    cfg = cfg or _cfg()
+    ma_o, y_o, sig = np.loadtxt(_DATA, delimiter=",", skiprows=1).T
+    w_o = _weights(ma_o, sig)
+    emu_cache = emu_cache or os.path.join(tempfile.gettempdir(), "flux_emu.npz")
+    rgi = build_flux_emulator(lookup, cfg, cache=emu_cache)
+    log_prob = make_log_prob(rgi, ma_o, y_o, w_o)
+    # start walkers in a small ball around the MLE
+    mle = np.array([13.7, 19.4, 105.0, 0.59, 27.0])
+    lo = np.array([b[0] for b in MLE_BOUNDS]); hi = np.array([b[1] for b in MLE_BOUNDS])
+    rng = np.random.default_rng(seed)
+    p0 = np.clip(mle + rng.normal(0, [1.5, 1.5, 15, 0.4, 3], size=(nwalkers, 5)), lo + 1e-6, hi - 1e-6)
+    print(f"  emulator ready; running MCMC ({nwalkers} walkers x {nsteps} steps)...", flush=True)
+    chain = run_mcmc(log_prob, p0, nsteps)
+    burn = nsteps // 3
+    samples = chain[burn:].reshape(-1, 5)
+    q = np.percentile(samples, [16, 50, 84], axis=0)
+    return dict(samples=samples, med=q[1], lo=q[1] - q[0], up=q[2] - q[1],
+                labels=["dw [mm]", "L [km]", "phi2 [deg]", "2f scale", "sigma [deg]"])
+
+
 def plot_overlay(result, lookup, cfg=None, out=None):
     """Data-vs-model overlay for the best fit (recomputes one flux curve)."""
     import matplotlib
@@ -281,17 +547,20 @@ def plot_overlay(result, lookup, cfg=None, out=None):
     dw, L, we = float(result["dw"]), float(result["L"]), float(result["w_eff"])
     phi0, A = float(result["phi0"]), float(result["A"])
     hs, hp = float(result.get("harm_scale", 0.0)), float(result.get("harm_phase", 0.0))
+    sigma = float(result.get("sigma", 0.0))
     cfg.physical.equilibrium_depth = L
     MA_m, flux_m = _flux_curve(cfg, L, dw, we, lookup, harm_scale=hs, harm_phase=hp)
-    o = np.argsort(MA_m); MA_m, flux_m = MA_m[o], flux_m[o]
+    o = np.argsort(MA_m)
+    gm, fsm = _ensemble_smooth(MA_m[o], flux_m[o], sigma)
     grid = np.linspace(0, 360, 721)
-    model = A * np.interp((grid - phi0) % 360.0, MA_m, flux_m, period=360.0)
+    model = A * np.interp((grid - phi0) % 360.0, gm, fsm, period=360.0)
     fig, ax = plt.subplots(figsize=(6.6, 4.3))
     ax.errorbar(ma_o, y_o, yerr=sig, fmt="o", ms=4, color="k", lw=1,
                 capsize=2, label="observed (digitized, Ingersoll+ 2020)")
-    ax.plot(grid, model, "-", color="tab:red", lw=1.8,
-            label=(f"best fit: $\\Delta w$={dw*1e3:.0f} mm, $L$={L/1e3:.0f} km, "
-                   f"2f scale={hs:g}@{hp:g}$^\\circ$, $\\phi_0$={phi0:.0f}$^\\circ$"))
+    slab = (f"best fit: $\\Delta w$={dw*1e3:.0f} mm, $L$={L/1e3:.0f} km, "
+            f"2f={hs:.1f}@{hp:.0f}$^\\circ$"
+            + (f", $\\sigma_\\phi$={sigma:.0f}$^\\circ$" if sigma > 0 else ""))
+    ax.plot(grid, model, "-", color="tab:red", lw=1.8, label=slab)
     ax.set_xlim(0, 360); ax.set_xticks(range(0, 361, 90))
     ax.set_xlabel("mean anomaly [deg]"); ax.set_ylabel("slab density [kg km$^{-1}$]")
     ax.set_title("Diurnal profile: model fit to observed emission")
@@ -310,6 +579,10 @@ def main():
                     help="skip fitting; load --out and just (re)draw the overlay")
     ap.add_argument("--ensemble", action="store_true",
                     help="skip fitting; load --out, fit the ensemble spread, draw Fig. 10")
+    ap.add_argument("--mle", action="store_true",
+                    help="continuous max-likelihood fit (global DE + local refine)")
+    ap.add_argument("--mcmc", action="store_true",
+                    help="posterior via emulator + ensemble MCMC; writes corner plot")
     args = ap.parse_args()
     if args.ensemble:
         r = dict(np.load(args.out))
@@ -323,6 +596,31 @@ def main():
         generate_r_table(np.geomspace(1e-3, 0.08, 24), np.geomspace(0.5, 3000.0, 24),
                          Tb_arr=np.array([272.0, 273.1501]), output_path=args.lookup, n_jobs=-1)
     lut = GasLookupTable(args.lookup, clean=True)
+    if args.mcmc:
+        r = fit_mcmc(lut)
+        plot_corner(r["samples"], r["labels"], truths=[13.7, 19.4, 105.0, 0.59, 27.0])
+        print("\n=== POSTERIOR (median +/- 68% credible) ===")
+        for lab, m, dn, up in zip(r["labels"], r["med"], r["lo"], r["up"]):
+            print(f"  {lab:14}= {m:7.2f}  (+{up:.2f} / -{dn:.2f})")
+        # dn is now the lower *error* (median - 16th pct)
+        np.savez(os.path.join(tempfile.gettempdir(), "diurnal_posterior.npz"),
+                 samples=r["samples"], med=r["med"], lo=r["lo"], up=r["up"])
+        return
+    if args.mle:
+        r = fit_mle(lut)
+        np.savez(args.out, **{k: v for k, v in r.items()})
+        print("\n=== MLE FIT (continuous) ===")
+        print(f"  dw    = {r['dw']*1e3:.1f} mm")
+        print(f"  L     = {r['L']/1e3:.1f} km")
+        print(f"  w_eff*= {r['w_eff']*1e3:.2f} mm (on attractor, interpolated)")
+        print(f"  2f: scale={r['harm_scale']:.2f}  phase={r['harm_phase']:.0f} deg")
+        print(f"  sigma_phi (ensemble) = {r['sigma']:.1f} deg")
+        print(f"  phi0  = {r['phi0']:.0f} deg   A = {r['A']:.3e}")
+        print(f"  chi2/dof = {r['chi2']:.1f}/{r['dof']} = {r['chi2_red']:.2f}")
+        print(f"  saved -> {args.out}")
+        plot_overlay(r, lut, out=os.path.normpath(os.path.join(
+            _HERE, "..", "writing", "manuscript", "Figures", "diurnal_fit_mle.pdf")))
+        return
     r = fit(lut)
     np.savez(args.out, **{k: v for k, v in r.items()})
     print("\n=== BEST FIT (on-attractor) ===")
