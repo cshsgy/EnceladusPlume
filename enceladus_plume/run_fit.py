@@ -113,8 +113,29 @@ def _flux_curve(cfg, L, dw, we, lookup, harm_scale=0.0, harm_phase=0.0):
     return (t[m][o] - t[m][o][0]) / P * 360.0, flux[m][o]
 
 
+# Secondary-peak prominence term: the relative strength of the secondary peak
+# (its amplitude above the adjacent baseline) is more diagnostic than the
+# absolute slab density, so we add an explicit, heavily-weighted penalty matching
+# the model's secondary prominence to the observed one. This prevents the fit from
+# washing the secondary out (e.g. via a large ensemble sigma) while still matching
+# the pointwise values.
+SEC_PEAK_MA = 37.5    # observed secondary-peak mean anomaly (deg)
+SEC_BASE_MA = 67.5    # adjacent baseline (inter-peak dip) mean anomaly (deg)
+PROM_ON = True
+PROM_BOOST = 80.0     # weight of the prominence term relative to a peak-point weight
+
+
 def _best_phi_A(MA_m, flux_m, ma_o, y_o, w_o):
-    """Best phase offset (scan) and closed-form amplitude; returns (phi0,A,chi2)."""
+    """Best phase offset (scan) and closed-form amplitude; returns (phi0,A,chi2).
+
+    The objective is the peak-weighted pointwise chi^2 plus, when ``PROM_ON``, a
+    secondary-peak prominence term ``W (A[m_sec - m_base] - obs_prom)^2``.
+    """
+    if PROM_ON:
+        i_sec = int(np.argmin(np.abs(ma_o - SEC_PEAK_MA)))
+        i_base = int(np.argmin(np.abs(ma_o - SEC_BASE_MA)))
+        obs_prom = float(y_o[i_sec] - y_o[i_base])
+        Wp = PROM_BOOST * float(w_o[i_sec])
     best = (np.nan, np.nan, np.inf)
     for phi0 in np.arange(0.0, 360.0, PHI_STEP):
         m = np.interp((ma_o - phi0) % 360.0, MA_m, flux_m, period=360.0)
@@ -126,6 +147,9 @@ def _best_phi_A(MA_m, flux_m, ma_o, y_o, w_o):
         if A <= 0:
             continue
         chi2 = float(np.sum(w_o * (A * m - y_o) ** 2))
+        if PROM_ON:
+            mod_prom = A * float(m[i_sec] - m[i_base])
+            chi2 += Wp * (mod_prom - obs_prom) ** 2
         if chi2 < best[2]:
             best = (float(phi0), float(A), chi2)
     return best
@@ -300,8 +324,19 @@ def build_weff_interp(cfg, verbose=True):
     Returns weff_of(dw_mm, L_km) -> w_eff [m].
     """
     from scipy.interpolate import LinearNDInterpolator, NearestNDInterpolator
-    dws = np.array([6, 9, 12, 16, 20, 25, 30]) * 1e-3
-    Ls = np.array([2, 3, 4, 6, 9, 13, 18, 22]) * 1e3
+    cache = os.path.join(tempfile.gettempdir(), "weff_grid.npz")
+    if os.path.exists(cache):
+        d = np.load(cache)
+        pts, vals = d["pts"], d["vals"]
+        lin = LinearNDInterpolator(pts, vals); near = NearestNDInterpolator(pts, vals)
+
+        def weff_of(dw_mm, L_km):
+            v = lin(dw_mm, L_km)
+            return float(v) if np.isfinite(v) else float(near(dw_mm, L_km))
+        print("  w_eff grid loaded from cache", flush=True)
+        return weff_of
+    dws = np.array([6, 10, 14, 20, 26]) * 1e-3
+    Ls = np.array([3, 5, 8, 12, 18, 22]) * 1e3
     pts, vals = [], []
     t0 = time.time()
     for dw in dws:
@@ -314,6 +349,7 @@ def build_weff_interp(cfg, verbose=True):
             print(f"  w_eff grid dw={dw*1e3:.0f}mm done | elapsed {(time.time()-t0)/60:.1f}m",
                   flush=True)
     pts, vals = np.array(pts), np.array(vals)
+    np.savez(cache, pts=pts, vals=vals)
     lin = LinearNDInterpolator(pts, vals)
     near = NearestNDInterpolator(pts, vals)
 
@@ -388,10 +424,10 @@ def fit_mle(lookup, cfg=None, seed=0):
 # ---------------------------------------------------------------------------
 # Posterior (MCMC) via a fast flux emulator
 # ---------------------------------------------------------------------------
-_EMU_DW = np.array([8, 13, 18, 25]) * 1e-3
-_EMU_L = np.array([5, 10, 15, 20]) * 1e3
-_EMU_PHI2 = np.array([0.0, 60.0, 120.0])
-_EMU_SCALE = np.array([0.0, 1.0, 2.0, 4.0])
+_EMU_DW = np.array([7, 10, 14, 20, 27]) * 1e-3
+_EMU_L = np.array([4, 6, 9, 14, 20]) * 1e3
+_EMU_PHI2 = np.array([0.0, 45.0, 90.0, 135.0])
+_EMU_SCALE = np.array([0.0, 1.5, 3.0, 4.5])
 _EMU_MA = np.arange(0.0, 360.0, 1.0)
 
 
@@ -524,7 +560,7 @@ def fit_mcmc(lookup, cfg=None, nsteps=1500, nwalkers=32, seed=0, emu_cache=None)
     rgi = build_flux_emulator(lookup, cfg, cache=emu_cache)
     log_prob = make_log_prob(rgi, ma_o, y_o, w_o)
     # start walkers in a small ball around the MLE
-    mle = np.array([13.7, 19.4, 105.0, 0.59, 27.0])
+    mle = np.array([9.3, 6.9, 82.0, 3.48, 22.0])
     lo = np.array([b[0] for b in MLE_BOUNDS]); hi = np.array([b[1] for b in MLE_BOUNDS])
     rng = np.random.default_rng(seed)
     p0 = np.clip(mle + rng.normal(0, [1.5, 1.5, 15, 0.4, 3], size=(nwalkers, 5)), lo + 1e-6, hi - 1e-6)
