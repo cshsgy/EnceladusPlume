@@ -231,6 +231,23 @@ def compute(lookup, cache, recompute=False):
 # --------------------------------------------------------------------------
 # Plot (from cache)
 # --------------------------------------------------------------------------
+def _psmooth(MA, y, sigma_deg=2.5, n=1440):
+    """Light periodic (Gaussian) smoothing of a curve on the 0-360 deg cycle.
+
+    Removes sub-degree numerical wiggles at the MA 0/360 wrap without affecting
+    the tens-of-degrees-wide physical peaks. Returns (uniform_MA, smoothed_y).
+    """
+    g = np.linspace(0.0, 360.0, n, endpoint=False)
+    o = np.argsort(MA)
+    f = np.interp(g, np.asarray(MA)[o], np.asarray(y)[o], period=360.0)
+    dx = 360.0 / n
+    half = int(np.ceil(4.0 * sigma_deg / dx))
+    k = np.arange(-half, half + 1) * dx
+    wk = np.exp(-0.5 * (k / sigma_deg) ** 2); wk /= wk.sum()
+    fs = np.convolve(np.concatenate([f, f, f]), wk, mode="same")[n:2 * n]
+    return g, fs
+
+
 def plot(cache):
     d = np.load(cache)
     # Fig 3
@@ -257,12 +274,18 @@ def plot(cache):
     # Fig 4
     fig, ax = plt.subplots(1, 2, figsize=(11, 4.3))
     MA, g = d["MA"], d["g"]
-    ax[0].plot(MA, g / g.max(), "k-")
+    gm, gs = _psmooth(MA, g / g.max())
+    ax[0].plot(gm, gs, "k-")
     ax[0].axvline(float(d["phi_w"]), ls="--", c="C0", label=f"widening {float(d['phi_w']):.0f}$^\\circ$")
     ax[0].axvline(float(d["phi_a"]), ls="--", c="C3", label=f"approach {float(d['phi_a']):.0f}$^\\circ$")
+    ax[0].set_xlim(0, 360); ax[0].set_xticks(range(0, 361, 90))
     ax[0].set_xlabel("mean anomaly [deg]"); ax[0].set_ylabel("mass flux (normalized)")
     ax[0].set_title("(a) Two gas-flux peaks"); ax[0].legend(fontsize=8)
     xs, ys, cols = d["xs"], d["ys"], d["cols"]
+    # drop degenerate cases where the widening peak is choked to ~0 (huge ratio /
+    # vanishing emission) -- they would collapse the log-log scale.
+    keep = (xs > 1.0) & (ys < 1.0e3)
+    xs, ys, cols = xs[keep], ys[keep], cols[keep]
     styles = {1.5: ("o", "tab:blue"), 2.0: ("s", "tab:cyan"), 3.0: ("^", "tab:green"),
               5.0: ("D", "tab:orange"), 10.0: ("v", "tab:purple"), 20.0: ("P", "tab:brown")}
     for L in sorted(set(cols.tolist())):
@@ -321,9 +344,10 @@ def plot(cache):
     MA, g = d["MA"], d["g"]
     pa, pw = float(d["phi_a"]), float(d["phi_w"])
     off = 180.0 - pa                       # align the approach peak to observed main
-    mas = (MA + off) % 360.0
+    gm, gs = _psmooth(MA, g / g.max())     # smooth in the model frame, then offset
+    mas = (gm + off) % 360.0
     o = np.argsort(mas)
-    ax.plot(mas[o], g[o] / g.max(), "k-", lw=1.9, label="model (phase-aligned)", zorder=4)
+    ax.plot(mas[o], gs[o], "k-", lw=1.9, label="model (phase-aligned)", zorder=4)
     for band, co, lab in ((OBS_MAIN_MA, "tab:orange", "observed main"),
                           (OBS_SEC_MA, "tab:blue", "observed secondary")):
         ax.axvspan(band[0], band[1], color=co, alpha=0.25, zorder=1,
