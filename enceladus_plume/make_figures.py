@@ -306,9 +306,9 @@ def plot(cache):
 
     # Fig 5: closing-up crack mass flux (early wide vs near close-up)
     fig, ax = plt.subplots(figsize=(6.2, 4.3))
-    ax.plot(d["clos_MA_e"], d["clos_g_e"], color="tab:blue", lw=1.8,
+    ax.plot(d["clos_MA_e"], d["clos_g_e"], color="k", ls="-", lw=1.8,
             label=f"early ($w_{{\\rm eff}}$={float(d['clos_we_e'])*1e3:.0f} mm, wide)")
-    ax.plot(d["clos_MA_l"], d["clos_g_l"], color="tab:red", lw=1.8,
+    ax.plot(d["clos_MA_l"], d["clos_g_l"], color="k", ls="--", lw=1.8,
             label=f"near close-up ($w_{{\\rm eff}}$={float(d['clos_we_l'])*1e3:.0f} mm)")
     ax.set_xlim(0, 360); ax.set_xticks(range(0, 361, 90))
     ax.set_xlabel("mean anomaly [deg]"); ax.set_ylabel("mass flux [kg s$^{-1}$]")
