@@ -144,19 +144,21 @@ def compute(lookup, cache, recompute=False):
     cfg = _cfg()
     have = {} if recompute or not os.path.exists(cache) else dict(np.load(cache))
 
-    # --- Fig 3: seal sweep ---
+    # --- Fig 3: seal sweep (attractor endpoint w_eff*, and per-cycle supply) ---
+    # For a grid of tidal swings we record where the crack seals to (w_eff*, the
+    # overflow attractor) and how fast it narrows (deposition_rate, mm/cycle per
+    # wall). Together these give both panels of the attractor figure.
     if "seal_dw" not in have:
         cfg.physical.equilibrium_depth = 5000.0
-        seal_dw = np.array([0.003, 0.006, 0.012, 0.025])
-        we_all, rise_all, wstar = [], [], []
+        seal_dw = np.array([4, 6, 8, 11, 15, 20, 26, 34]) * 1e-3
+        wstar, dep = [], []
         for dw in seal_dw:
-            res = evolve_geometry_coupled(cfg, float(dw), n_e=11, w_eff_max=0.06, w_floor=2e-3)
-            we_all.append(res.w_eff * 1e3)
-            rise_all.append((res.water_max - res.L) / 500.0)
-            wstar.append(res.w_eff_overflow * 1e3)
-        have.update(seal_dw=seal_dw, we_all=np.array(we_all),
-                    rise_all=np.array(rise_all), wstar=np.array(wstar))
-        print("computed Fig 3 (seal sweep)")
+            res = evolve_geometry_coupled(cfg, float(dw), n_e=11, w_eff_max=0.08, w_floor=2e-3)
+            wstar.append(res.w_eff_overflow * 1e3)   # mm
+            dep.append(res.deposition_rate)          # mm/cycle, per wall
+        have.update(seal_dw=seal_dw, seal_wstar=np.array(wstar),
+                    seal_dep=np.array(dep))
+        print("computed Fig 3 (seal sweep: w_eff* and supply vs dw)")
 
     # --- Fig 4a: example curve ---
     if "MA" not in have:
@@ -213,17 +215,6 @@ def compute(lookup, cache, recompute=False):
             have[f"cond_meta{tag}"] = np.array([ma6[i], h6[i] / D6, w6[i] * 1e3])
         print("computed Fig 6 (condensation profiles)")
 
-    # --- Fig 8: convergence to the attractor from different initial widths ---
-    # One fine w_eff sweep gives the water-rise relation h_max/D(w_eff); stepping
-    # w_eff down by the model's condensation supply turns it into a time series.
-    if "conv_we" not in have:
-        cfg.physical.equilibrium_depth = 5000.0
-        res = evolve_geometry_coupled(cfg, 0.012, n_e=44, w_eff_max=0.12, w_floor=1.5e-3)
-        have.update(conv_we=res.w_eff * 1e3, conv_hD=(res.water_max - res.L) / res.D,
-                    conv_dep=res.deposition_rate,
-                    conv_wstar=res.w_eff_overflow * 1e3)
-        print(f"computed Fig 8 (convergence; dep={res.deposition_rate:.2f} mm/cycle)")
-
     np.savez(cache, **have)
     print("cache written")
 
@@ -250,23 +241,37 @@ def _psmooth(MA, y, sigma_deg=2.5, n=1440):
 
 def plot(cache):
     d = np.load(cache)
-    # Fig 3
+    # Fig 3: the self-sealing attractor -- how fast it seals, and where to.
+    dw_mm = d["seal_dw"] * 1e3
+    wstar = d["seal_wstar"]                 # overflow seal depth w_eff*(dw) [mm]
+    dep = d["seal_dep"]                     # supply [mm/cycle per wall]
+    P_days = _cfg().physical.orbital_period / 86400.0
     fig, ax = plt.subplots(1, 2, figsize=(11, 4.3))
-    for k, dw in enumerate(d["seal_dw"]):
-        we, rise = d["we_all"][k], d["rise_all"][k]
-        line, = ax[0].plot(we, rise, "o-", ms=3, label=f"$\\Delta w$={dw*1e3:.0f} mm")
-        i0 = len(we) * 6 // 10
-        ax[0].annotate("", xy=(we[i0 + 1], rise[i0 + 1]), xytext=(we[i0], rise[i0]),
-                       arrowprops=dict(arrowstyle="-|>", color=line.get_color(), lw=2))
-    ax[0].axhline(1.0, color="grey", ls=":", label="overflow")
-    ax[0].text(0.30, 0.78, "self-sealing\n(time)", transform=ax[0].transAxes,
-               fontsize=9, ha="center", style="italic")
-    ax[0].set_xlabel("effective width $w_{\\rm eff}$ [mm]"); ax[0].set_ylabel("max water rise / D")
-    ax[0].invert_xaxis(); ax[0].set_title("(a) Every tidal swing seals toward overflow")
-    ax[0].legend(fontsize=8)
-    ax[1].plot(d["seal_dw"] * 1e3, d["wstar"], "ks-")
+
+    # (a) time to reach the attractor vs initial crack width, for several swings.
+    # A crack narrows by 2*dep per cycle until w_eff hits w_eff*(dw); the number
+    # of cycles is (w0 - w_eff*) / (2*dep).  Curves for a subset of swings.
+    w0 = np.geomspace(12.0, 1000.0, 120)    # initial width, 1.2 cm -> 1 m
+    sub = [1, 3, 5, 7]                       # dw = 6, 11, 20, 34 mm
+    cols = plt.get_cmap("viridis")(np.linspace(0.15, 0.85, len(sub)))
+    for c, k in zip(cols, sub):
+        ncyc = np.maximum(w0 - wstar[k], 0.0) / (2.0 * dep[k])
+        ax[0].plot(w0, ncyc, "-", color=c, lw=2,
+                   label=f"$\\Delta w$={dw_mm[k]:.0f} mm")
+    ax[0].set_xscale("log")
+    ax[0].set_xlabel("initial crack width $w_0$ [mm]")
+    ax[0].set_ylabel("cycles to reach overflow")
+    ax[0].set_title("(a) Sealing is fast from any starting width")
+    ax[0].grid(alpha=0.3, which="both"); ax[0].legend(fontsize=8, loc="upper left")
+    # secondary axis: cycles -> days (Enceladus diurnal period)
+    axd = ax[0].secondary_yaxis("right", functions=(lambda n: n * P_days,
+                                                     lambda t: t / P_days))
+    axd.set_ylabel("time [days]")
+
+    # (b) where it seals to: the overflow attractor w_eff*(dw).
+    ax[1].plot(dw_mm, wstar, "ks-", ms=5)
     ax[1].set_xlabel("absolute tidal swing $\\Delta w$ [mm]")
-    ax[1].set_ylabel("seal depth at overflow $w_{\\rm eff}^*$ [mm]")
+    ax[1].set_ylabel("steady-state seal depth $w_{\\rm eff}^*$ [mm]")
     ax[1].set_title("(b) Swing sets only how far it seals"); ax[1].grid(alpha=0.3)
     fig.tight_layout(); fig.savefig(os.path.join(OUT, "wall_seal_regime.pdf"))
     print("wrote wall_seal_regime.pdf")
@@ -361,31 +366,6 @@ def plot(cache):
     ax.legend(fontsize=8, loc="upper left"); ax.grid(alpha=0.3)
     fig.tight_layout(); fig.savefig(os.path.join(OUT, "phase_overlay.pdf"))
     print("wrote phase_overlay.pdf")
-
-    # Fig 8: convergence to the attractor from different initial widths
-    fig, ax = plt.subplots(figsize=(6.4, 4.3))
-    we, hD = d["conv_we"], np.clip(d["conv_hD"], 0.0, 1.0)
-    dep = float(d["conv_dep"])              # mm/cycle per wall
-    wstar = float(d["conv_wstar"])          # overflow seal depth (attractor floor)
-    order = np.argsort(we)                  # ascending w_eff for np.interp
-    wes, hDs = we[order], hD[order]
-    step = 2.0 * dep                        # both walls line -> w_eff narrows
-    inits = [(10.0, "tab:blue", "o"), (30.0, "tab:green", "s"),
-             (60.0, "tab:orange", "^"), (100.0, "tab:red", "D")]
-    for w0, co, mk in inits:
-        ns = np.arange(0, 7)
-        # w_eff narrows at the deposition rate, then holds at w_eff* where the
-        # rising water balances condensation (the overflow attractor).
-        weff_n = np.maximum(w0 - step * ns, wstar)
-        h = np.interp(weff_n, wes, hDs)
-        ax.plot(ns, h, mk + "-", color=co, ms=5, label=f"initial width {w0:.0f} mm")
-    ax.axhline(0.9, color="grey", ls=":", label="overflow")
-    ax.set_xlabel("diurnal cycles"); ax.set_ylabel("max water rise / D")
-    ax.set_ylim(0, 1.0); ax.set_xlim(0, 6)
-    ax.set_title("Any initial width converges to overflow ($\\Delta w$=12 mm)")
-    ax.legend(fontsize=8, loc="lower right"); ax.grid(alpha=0.3)
-    fig.tight_layout(); fig.savefig(os.path.join(OUT, "attractor_convergence.pdf"))
-    print("wrote attractor_convergence.pdf")
 
 
 def main():
