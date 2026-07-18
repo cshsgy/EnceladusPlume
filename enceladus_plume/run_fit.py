@@ -30,7 +30,9 @@ import time
 import numpy as np
 
 from enceladus_plume.config import load_config
-from enceladus_plume.utils import build_width_series
+from enceladus_plume.utils import (build_width_series, width_scale,
+                                   FORCING_SHIFTED_DOUBLE_COSINE,
+                                   FORCING_SINGLE_COSINE)
 from enceladus_plume.liquid_dynamics.solver import (
     liquid_dynamics, compute_overflow_rate, buffer_overflow,
 )
@@ -590,7 +592,10 @@ def plot_overlay(result, lookup, cfg=None, out=None):
     gm, fsm = _ensemble_smooth(MA_m[o], flux_m[o], sigma)
     grid = np.linspace(0, 360, 721)
     model = A * np.interp((grid - phi0) % 360.0, gm, fsm, period=360.0)
-    fig, ax = plt.subplots(figsize=(6.6, 4.3))
+
+    fig, (ax, axb) = plt.subplots(1, 2, figsize=(11.0, 4.3))
+
+    # (a) observed emission vs the best-fit diurnal profile
     ax.errorbar(ma_o, y_o, yerr=sig, fmt="o", ms=4, color="k", lw=1,
                 capsize=2, label="observed (digitized, Ingersoll+ 2020)")
     slab = (f"best fit: $\\Delta w$={dw*1e3:.0f} mm, $L$={L/1e3:.0f} km, "
@@ -599,8 +604,26 @@ def plot_overlay(result, lookup, cfg=None, out=None):
     ax.plot(grid, model, "-", color="tab:red", lw=1.8, label=slab)
     ax.set_xlim(0, 360); ax.set_xticks(range(0, 361, 90))
     ax.set_xlabel("mean anomaly [deg]"); ax.set_ylabel("slab density [kg km$^{-1}$]")
-    ax.set_title("Diurnal profile: model fit to observed emission")
+    ax.set_title("(a) Diurnal profile: model fit to observed emission")
     ax.legend(fontsize=8); ax.grid(alpha=0.3)
+
+    # (b) the fitted crack-width forcing shape (same mean-anomaly frame as (a)),
+    # normalized to [0,1]; the single cosine (alpha=0) is drawn for reference.
+    ph = np.deg2rad(grid - phi0)               # model phase at each observed MA
+    prof_fit = width_scale(ph, 2.0, forcing_model=FORCING_SHIFTED_DOUBLE_COSINE,
+                           second_harmonic_scale=hs,
+                           second_harmonic_phase_deg=hp) - 1.0
+    prof_sin = width_scale(ph, 2.0, forcing_model=FORCING_SINGLE_COSINE) - 1.0
+    axb.plot(grid, prof_sin, "--", color="0.55", lw=1.6,
+             label=r"single cosine ($\alpha=0$)")
+    axb.plot(grid, prof_fit, "-", color="tab:blue", lw=2.0,
+             label=rf"fitted double-cosine ($\alpha$={hs:.1f}, $\phi_2$={hp:.0f}$^\circ$)")
+    axb.set_xlim(0, 360); axb.set_xticks(range(0, 361, 90)); axb.set_ylim(-0.03, 1.05)
+    axb.set_xlabel("mean anomaly [deg]")
+    axb.set_ylabel(r"normalized crack width $(\delta-\delta_{\min})/\Delta\delta$")
+    axb.set_title("(b) Fitted double-periodic width forcing")
+    axb.legend(fontsize=8, loc="upper right"); axb.grid(alpha=0.3)
+
     out = out or os.path.normpath(os.path.join(
         _HERE, "..", "writing", "manuscript", "Figures", "diurnal_fit.pdf"))
     fig.tight_layout(); fig.savefig(out)
