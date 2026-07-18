@@ -114,7 +114,8 @@ def build(result_path, lookup_path):
         ax.text(x, 1.10, lab, ha="center", va="bottom", fontsize=13, fontweight="bold")
     ax.set_xlim(0, 360); ax.set_xticks(range(0, 361, 90)); ax.set_ylim(0, 1.14)
     ax.set_xlabel("mean anomaly [deg]"); ax.set_ylabel("normalized")
-    ax.legend(fontsize=8.0, loc="upper right", framealpha=0.9); ax.grid(alpha=0.3)
+    ax.legend(fontsize=8.0, loc="upper left", bbox_to_anchor=(1.02, 1.0),
+              borderaxespad=0.0, framealpha=0.9); ax.grid(alpha=0.3)
 
     fig.savefig(OUT, dpi=200, bbox_inches="tight")
     print(f"wrote {OUT}")
