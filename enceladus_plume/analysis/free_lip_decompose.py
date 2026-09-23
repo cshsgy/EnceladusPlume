@@ -13,7 +13,9 @@ from enceladus_plume.gas_dynamics.lookup import GasLookupTable
 from enceladus_plume.wall_geometry import evolve_geometry_coupled
 
 R.BARRIER_MODE = "free"
-r = R.load_result(os.path.join(R._RESULTS, "diurnal_fit_free.json")); lut = GasLookupTable(R.DEFAULT_LOOKUP, clean=True)
+RES = sys.argv[1] if len(sys.argv) > 1 else os.path.join(R._RESULTS, "diurnal_fit_free.json")
+TAG = os.path.splitext(os.path.basename(RES))[0]
+r = R.load_result(RES); lut = GasLookupTable(R.DEFAULT_LOOKUP, clean=True)
 dw, L, we = float(r["dw"]), float(r["L"]), float(r["w_eff"])
 al, p2, sig, p0, A = float(r["harm_scale"]), float(r["harm_phase"]), float(r["sigma"]), float(r["phi0"]), float(r["A"])
 cfg = R._cfg(); cfg.physical.equilibrium_depth = L
@@ -51,7 +53,12 @@ ax[2].errorbar(ma_o, y_o / A * CL, yerr=so / A * CL, fmt="o", ms=3.5, color="k",
 ax[2].set_ylabel("mass flux, 500 km [kg s$^{-1}$]"); ax[2].set_xlabel("observed mean anomaly [deg]"); ax[2].set_xlim(0, 360); ax[2].set_xticks(range(0, 361, 90)); ax[2].legend(fontsize=7.5)
 for a in ax: a.grid(alpha=0.3)
 fig.suptitle(rf"Free-lip best fit: $\Delta\delta$={dw*1e3:.0f} mm, $L$={L/1e3:.1f} km, $\alpha$={al:.2f}, $\phi_2$={p2:.0f}$^\circ$, $\sigma_\phi$={sig:.0f}$^\circ$, $\chi^2$/dof={float(r['chi2_red']):.2f}", fontsize=10)
-fig.tight_layout(); fig.savefig("/tmp/freefit/decompose.png", dpi=140); print("wrote /tmp/freefit/decompose.png")
-# direct attractor closure width at the fitted (dw, L) in free mode (grid was 3-22 km, backflow)
-t0 = time.time(); g_ = evolve_geometry_coupled(cfg, dw, n_e=7, w_eff_max=0.06, w_floor=2e-3)
-print(f"direct w_eff* at (dw={dw*1e3:.0f} mm, L={L:.0f} m), free mode: overflow={g_.overflow}, w_eff*={g_.w_eff_overflow*1e3 if np.isfinite(g_.w_eff_overflow) else float('nan'):.2f} mm (fit used {we*1e3:.2f} mm) [{(time.time()-t0)/60:.1f} min]")
+fig.tight_layout(); fig.savefig(f"/tmp/freefit/decompose_{TAG}.png", dpi=140); print(f"wrote /tmp/freefit/decompose_{TAG}.png")
+# self-consistency: direct bisection closure width at the fitted (dw, L) vs the interpolated value used
+from enceladus_plume.wall_geometry import closure_width
+t0 = time.time(); we_direct, ok = closure_width(cfg, dw)
+print(f"direct closure width at (dw={dw*1e3:.1f} mm, L={L/1e3:.2f} km): {we_direct*1e3:.3f} mm (fit used {we*1e3:.3f} mm) [{(time.time()-t0):.0f} s]")
+ma_o, y_o, so = np.loadtxt(R._DATA, delimiter=",", skiprows=1).T; w_o = R._weights(ma_o, so)
+th = np.array([dw*1e3, L/1e3, p2, al, sig]); dof = float(r["dof"])
+for lab, wv in [("interpolated", we), ("direct", we_direct)] + [(f"{x:+.1f} mm", we + x*1e-3) for x in (-0.5, -0.25, 0.25, 0.5)]:
+    nll = R._neg_loglike(th, lambda a,b,wv=wv: wv, lut, cfg, ma_o, y_o, w_o); print(f"  chi2/dof at w_eff {lab:>12s} ({wv*1e3:.2f} mm): {2*nll/dof:.2f}", flush=True)
