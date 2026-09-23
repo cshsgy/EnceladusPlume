@@ -58,6 +58,14 @@ class LiquidDynamicsParams:
     # (well below the vacuum limit). ~0.5 h for a mm-cm pond; the flux is
     # insensitive to tau over a plausible range.
     overflow_tau: float = 1800.0
+    # How the water level is capped at the surface (h = +D):
+    #   "backflow": stiff restoring force + velocity damping in the barrier layer;
+    #               the displaced water is driven back down the column into the
+    #               ocean and only a residual rise is counted as spill.
+    #   "free":     free lip -- the level is capped but the momentum equation is
+    #               left untouched, so all of the rise the cap suppresses leaves
+    #               the column as spill (compute_overflow_rate).
+    surface_barrier: str = "backflow"
 
 
 @dataclass

@@ -125,8 +125,13 @@ def _weights(ma_o, sig):
 MLE_BOUNDS = [(6.0, 30.0), (2.0, 22.0), (0.0, 180.0), (0.0, 1.5), (0.0, 35.0)]
 
 
+BARRIER_MODE = None   # None -> config default ("backflow"); set by --barrier or by callers
+
+
 def _cfg():
     cfg = load_config()
+    if BARRIER_MODE:
+        cfg.liquid_dynamics.surface_barrier = BARRIER_MODE
     cfg.liquid_dynamics.n_periods = 2
     cfg.liquid_dynamics.max_step = 300.0
     cfg.liquid_dynamics.npts_velocity = 40   # h_max/D identical to 150 here, ~2x faster
@@ -728,10 +733,16 @@ def main():
                     help="continuous max-likelihood fit (global DE + local refine)")
     ap.add_argument("--mcmc", action="store_true",
                     help="posterior via emulator + ensemble MCMC; writes corner plot")
+    ap.add_argument("--barrier", default=None, choices=["backflow", "free"],
+                    help="surface-barrier mode for the liquid column (default: config, 'backflow')")
     ap.add_argument("--refine", action="store_true",
                     help="deterministic local (Nelder-Mead) refinement starting from the "
                          "result in --out; saves back to --out and redraws the overlay")
     args = ap.parse_args()
+    if args.barrier:
+        global BARRIER_MODE
+        BARRIER_MODE = args.barrier
+        print(f"  surface barrier mode: {args.barrier}", flush=True)
     if args.ensemble:
         r = load_result(args.out)
         plot_ensemble(r, GasLookupTable(args.lookup, clean=True))

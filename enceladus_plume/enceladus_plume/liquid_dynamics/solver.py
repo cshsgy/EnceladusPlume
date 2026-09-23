@@ -75,14 +75,21 @@ BARRIER_K = 10.0       # 1/s^2, restoring acceleration in the barrier zone
 BARRIER_DAMP = 5.0     # 1/s, velocity damping rate in the barrier zone
 
 
-def _make_clamped_rhs(raw_rhs, D: float, L: float):
+def _make_clamped_rhs(raw_rhs, D: float, L: float, mode: str = "backflow"):
     """Wrap *raw_rhs* with the overflow/floor barrier.
 
-    A stiff restoring force activates within ``BARRIER_DELTA`` of the surface
-    (h = +D) and the ice floor (h = -L), capping the water level. The barrier is
+    The water level is capped within ``BARRIER_DELTA`` of the surface (h = +D)
+    and the ice floor (h = -L). ``mode="backflow"`` adds a stiff restoring force
+    and velocity damping in the surface layer, which reverses the base velocity
+    so the displaced water returns to the ocean; ``mode="free"`` only suppresses
+    the rise (free lip), leaving the momentum equation untouched, so the whole
+    suppressed rise is spill (see :func:`compute_overflow_rate`). The barrier is
     C1 so explicit ODE solvers stay efficient.
     """
     dlt = BARRIER_DELTA
+    if mode not in ("backflow", "free"):
+        raise ValueError(f"surface_barrier must be 'backflow' or 'free', got {mode!r}")
+    free = mode == "free"
 
     def clamped_rhs(t, y):
         v, h = float(y[0]), float(y[1])
@@ -92,7 +99,8 @@ def _make_clamped_rhs(raw_rhs, D: float, L: float):
             pen = max(0.0, (h - (D - dlt)) / dlt)
             pen2 = pen * pen
             dhdt = dhdt * (1.0 - pen2) if dhdt > 0 else dhdt
-            dvdt -= BARRIER_K * pen2 * (h - D + dlt) + BARRIER_DAMP * pen2 * v
+            if not free:
+                dvdt -= BARRIER_K * pen2 * (h - D + dlt) + BARRIER_DAMP * pen2 * v
         elif h < -L + dlt:
             pen = max(0.0, ((-L + dlt) - h) / dlt)
             pen2 = pen * pen
@@ -170,7 +178,7 @@ def liquid_dynamics(
                                  lp.npts_velocity, fric_kw)
         return [dvdt, dhdt]
 
-    rhs = _make_clamped_rhs(raw_rhs, D, L)
+    rhs = _make_clamped_rhs(raw_rhs, D, L, getattr(lp, 'surface_barrier', 'backflow'))
     n_output = max(int(t_stop / 10.0), 2000)
     t_eval = np.linspace(0.0, t_stop, n_output)
 
@@ -256,7 +264,7 @@ def liquid_dynamics_2022(
                                  lp.npts_velocity, fric_kw)
         return [dvdt, dhdt]
 
-    rhs = _make_clamped_rhs(raw_rhs, D, L)
+    rhs = _make_clamped_rhs(raw_rhs, D, L, getattr(lp, 'surface_barrier', 'backflow'))
     n_output = max(int(t_stop / 10.0), 2000)
     t_eval = np.linspace(0.0, t_stop, n_output)
 
