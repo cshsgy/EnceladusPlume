@@ -1,0 +1,17 @@
+{
+  "A": 445311.57600078755,
+  "L": 1549.4041186631441,
+  "barrier": "free",
+  "barrier_delta_m": 1.0,
+  "chi2": 40.11186119850407,
+  "chi2_red": 1.910088628500194,
+  "closure": "self-consistent bisection with fitted forcing",
+  "dof": 21,
+  "dw": 0.005362179178596375,
+  "harm_phase": 0.0,
+  "harm_scale": 0.0,
+  "lut": "gas_lut_fine.npz",
+  "phi0": 228.0,
+  "sigma": 15.851617633519048,
+  "w_eff": 0.004507013777095003
+}

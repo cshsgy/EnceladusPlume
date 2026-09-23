@@ -15,10 +15,15 @@ from enceladus_plume.wall_geometry import evolve_geometry_coupled
 R.BARRIER_MODE = "free"
 RES = sys.argv[1] if len(sys.argv) > 1 else os.path.join(R._RESULTS, "diurnal_fit_free.json")
 TAG = os.path.splitext(os.path.basename(RES))[0]
-r = R.load_result(RES); lut = GasLookupTable(R.DEFAULT_LOOKUP, clean=True)
+r = R.load_result(RES)
+lut_path = os.path.join(R._RESULTS, str(r["lut"])) if "lut" in r else R.DEFAULT_LOOKUP
+lut = GasLookupTable(lut_path, clean=True); print("LUT:", os.path.basename(lut_path), "depth min", lut.depth.min())
 dw, L, we = float(r["dw"]), float(r["L"]), float(r["w_eff"])
 al, p2, sig, p0, A = float(r["harm_scale"]), float(r["harm_phase"]), float(r["sigma"]), float(r["phi0"]), float(r["A"])
 cfg = R._cfg(); cfg.physical.equilibrium_depth = L
+if "barrier_delta_m" in r: cfg.liquid_dynamics.barrier_delta = float(r["barrier_delta_m"]); print("barrier_delta", cfg.liquid_dynamics.barrier_delta, "m")
+from enceladus_plume.liquid_dynamics import solver as _S
+BARRIER_DELTA = cfg.liquid_dynamics.barrier_delta
 D = L / 10; P = cfg.physical.orbital_period; CL = 500e3; rho = cfg.physical.liquid_density
 f_evap = cfg.physical.latent_heat_fusion / (cfg.physical.latent_heat_vaporization + cfg.physical.latent_heat_fusion)
 print(f"fit: dw={dw*1e3:.1f} mm L={L:.0f} m (D={D:.0f} m) w_eff*={we*1e3:.2f} mm alpha={al:.2f} phi2={p2:.0f} sigma={sig:.0f} phi0={p0:.0f} chi2/dof={float(r['chi2_red']):.2f}")
