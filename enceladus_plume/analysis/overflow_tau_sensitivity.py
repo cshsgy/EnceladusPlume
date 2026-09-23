@@ -17,7 +17,7 @@ dw, L, we = float(r["dw"]), float(r["L"]), float(r["w_eff"])
 alpha, phi2, sigma, phi0 = float(r["harm_scale"]), float(r["harm_phase"]), float(r["sigma"]), float(r["phi0"])
 cfg.physical.equilibrium_depth = L
 D = L / 10.0; P = cfg.physical.orbital_period
-Lv, Lf = cfg.physical.latent_heat, cfg.physical.latent_heat_fusion
+Lv, Lf = cfg.physical.latent_heat_vaporization, cfg.physical.latent_heat_fusion
 f_evap = Lf / (Lv + Lf); rho_w = cfg.physical.liquid_density
 print(f"Lv={Lv:.3g} Lf={Lf:.3g} f_evap={f_evap:.3f}  BARRIER_DELTA={BARRIER_DELTA} m  config tau={cfg.liquid_dynamics.overflow_tau} s")
 

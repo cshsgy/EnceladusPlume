@@ -142,7 +142,7 @@ def _flux_curve(cfg, L, dw, we, lookup, harm_scale=0.0, harm_phase=0.0):
     D = L / 10.0
     P = cfg.physical.orbital_period
     f_evap = cfg.physical.latent_heat_fusion / (
-        cfg.physical.latent_heat + cfg.physical.latent_heat_fusion)
+        cfg.physical.latent_heat_vaporization + cfg.physical.latent_heat_fusion)
     rho_w = cfg.physical.liquid_density
     t_in = np.arange(100, P + 1, 200.0)
     R = 1.0 + dw / we

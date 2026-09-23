@@ -153,7 +153,7 @@ def predict_peaks(
 
     # overflow evaporation (small but included): a fraction f_evap = Lf/(Lv+Lf)
     # of the water that exits the top is evaporated as it freezes/sublimates.
-    Lv = float(cfg.physical.latent_heat)
+    Lv = float(cfg.physical.latent_heat_vaporization)   # evaporation from liquid, not sublimation
     Lf = float(cfg.physical.latent_heat_fusion)
     f_evap = Lf / (Lv + Lf)
     rho_w = float(cfg.physical.liquid_density)

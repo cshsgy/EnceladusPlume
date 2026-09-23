@@ -180,7 +180,7 @@ def main():
     lookup = GasLookupTable(lookup_path)
     Tb_interp = float(np.mean(Tb_list))
 
-    Lv = float(cfg.physical.latent_heat)
+    Lv = float(cfg.physical.latent_heat_vaporization)
     Lf = float(cfg.physical.latent_heat_fusion)
     f_evap = Lf / (Lv + Lf)
     rho_w = float(cfg.physical.liquid_density)

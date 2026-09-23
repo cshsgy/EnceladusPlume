@@ -19,7 +19,8 @@ class PhysicalParams:
     gravity: float = 0.113
     thermal_diffusivity: float = 1.0e-6
     thermal_conductivity: float = 2.4  # consistent with gas/wall-budget kt
-    latent_heat: float = 2.84e6
+    latent_heat: float = 2.84e6            # sublimation (ice <-> vapor), used for the walls
+    latent_heat_vaporization: float = 2.5e6  # evaporation from liquid at 273 K (overflow flash-freezing)
     latent_heat_fusion: float = 3.34e5
     effective_surface_temp: float = 68.0
     orbital_period: float = 118800.0

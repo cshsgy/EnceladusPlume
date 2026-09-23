@@ -21,7 +21,7 @@ from enceladus_plume.gas_dynamics.lookup import GasLookupTable
 def cycle(cfg, lut, L, dw, we, alpha, phi2, sigma, phi0):
     """Width, h/D and ensemble-smoothed flux over the last cycle, in observed MA."""
     D = L / 10.0; P = cfg.physical.orbital_period
-    f_evap = cfg.physical.latent_heat_fusion / (cfg.physical.latent_heat + cfg.physical.latent_heat_fusion)
+    f_evap = cfg.physical.latent_heat_fusion / (cfg.physical.latent_heat_vaporization + cfg.physical.latent_heat_fusion)
     rho_w = cfg.physical.liquid_density
     t_in = np.arange(100, P + 1, 200.0)
     w_in = build_width_series(t_in, 1.0 + dw / we, we, orbital_period=P,
