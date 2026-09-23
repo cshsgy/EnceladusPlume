@@ -396,6 +396,61 @@ def evolve_geometry_coupled(
     )
 
 
+def closure_width(
+    cfg: Config,
+    delta_w: float,
+    *,
+    forcing_model: str = "single-cosine",
+    forcing_params: dict | None = None,
+    w_lo: float = 1e-3,
+    w_hi: float = 0.08,
+    tol: float = 2e-5,
+    target_below_surface: float | None = None,
+    verbose: bool = False,
+) -> tuple[float, bool]:
+    """Closure width w_eff* at fixed tidal width amplitude ``delta_w`` by bisection.
+
+    w_eff* is the effective minimum width at which the maximum water level first
+    reaches the surface cap, defined as ``h_max = D - target_below_surface``
+    (default: the top of the barrier layer, ``BARRIER_DELTA``, where spill begins;
+    this makes the result independent of the barrier mode). h_max decreases
+    monotonically with w_eff at fixed delta_w, so a bracketed bisection converges
+    in ~12 liquid solves to ``tol`` (default 0.02 mm). Returns (w_eff*, reached);
+    ``reached`` is False (and w_eff* = nan) if even ``w_lo`` does not reach the cap.
+    """
+    from .liquid_dynamics.solver import BARRIER_DELTA
+    forcing_params = forcing_params or {}
+    P = float(cfg.physical.orbital_period)
+    L = float(cfg.physical.equilibrium_depth)
+    D = L / 10.0
+    target = D - (BARRIER_DELTA if target_below_surface is None else target_below_surface)
+    t_in = np.arange(100, P + 1, 200.0)
+
+    def hmax(we: float) -> float:
+        w_in = build_width_series(t_in, 1.0 + delta_w / we, we, orbital_period=P,
+                                  forcing_model=forcing_model, **forcing_params)
+        _, h_rec, _, _ = liquid_dynamics(w_in, t_in, L, cfg)
+        return float(np.nanmax(h_rec))
+
+    lo, hi = w_lo, w_hi
+    h_lo = hmax(lo)
+    if h_lo < target:
+        return float("nan"), False
+    h_hi = hmax(hi)
+    if h_hi >= target:          # even the widest crack reaches the cap
+        return hi, True
+    while hi - lo > tol:
+        mid = np.sqrt(lo * hi)  # bisect in log width
+        h_mid = hmax(mid)
+        if verbose:
+            print(f"    closure_width: w={mid*1e3:.3f} mm h_max-target={h_mid-target:+.2f} m", flush=True)
+        if h_mid >= target:
+            lo = mid
+        else:
+            hi = mid
+    return float(np.sqrt(lo * hi)), True
+
+
 # ---------------------------------------------------------------------------
 # Full coupled stage B (z-dependent liquid solver in the loop)
 # ---------------------------------------------------------------------------

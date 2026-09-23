@@ -52,7 +52,7 @@ _DATA = os.path.join(_HERE, "data", "observed_diurnal.csv")
 # rebuilding the gas lookup table / w_eff* grid.
 _RESULTS = os.path.join(_HERE, "results")
 DEFAULT_LOOKUP = os.path.join(_RESULTS, "gas_lut.npz")        # gas-column lookup table
-DEFAULT_WEFF_CACHE = os.path.join(_RESULTS, "weff_grid.npz")  # on-attractor w_eff*(dw, L)
+DEFAULT_WEFF_CACHE = os.path.join(_RESULTS, "weff_grid_v2.npz")  # closure width w_eff*(dw, L), bisection grid
 DEFAULT_RESULT = os.path.join(_RESULTS, "diurnal_fit.json")   # adopted best fit (mode B)
 
 # The manuscript lives in its own repo; figures are written straight into it.
@@ -122,7 +122,7 @@ def _weights(ma_o, sig):
 
 # Continuous MLE bounds: (dw[mm], L[km], phi2[deg], 2f-scale, sigma_phi[deg]).
 # params: dw[mm], L[km], phi2[deg], alpha (2f/1f amplitude ratio), sigma_phi[deg]
-MLE_BOUNDS = [(6.0, 30.0), (2.0, 22.0), (0.0, 180.0), (0.0, 1.5), (0.0, 35.0)]
+MLE_BOUNDS = [(3.0, 60.0), (1.0, 22.0), (0.0, 180.0), (0.0, 1.5), (0.0, 45.0)]
 
 
 BARRIER_MODE = None   # None -> config default ("backflow"); set by --barrier or by callers
@@ -368,49 +368,53 @@ def plot_ensemble(result, lookup, cfg=None, out=None):
     return e
 
 
-def build_weff_interp(cfg, verbose=True):
-    """Precompute the on-attractor seal depth w_eff*(dw, L) and interpolate it.
+def build_weff_interp(cfg, verbose=True, cache=None, n_jobs=32):
+    """Precompute the closure width w_eff*(dw, L) on a grid and interpolate it.
 
-    w_eff* is the deterministic steady-state result of the sealing iteration
-    (not a free parameter), so we sample it on a coarse (dw, L) grid once and
-    interpolate; each likelihood evaluation is then a single flux solve.
+    w_eff* is the deterministic result of the sealing iteration (the width at which
+    the water first reaches the surface cap; :func:`closure_width`, bisection to
+    0.02 mm), not a free parameter. It is sampled on a log-spaced (dw, L) grid
+    covering the fit bounds and interpolated linearly in (log dw, log L); each
+    likelihood evaluation is then a single flux solve. The grid is cached in
+    ``results/`` (committed) and rebuilt in parallel only if missing.
     Returns weff_of(dw_mm, L_km) -> w_eff [m].
     """
-    from scipy.interpolate import LinearNDInterpolator, NearestNDInterpolator
-    cache = DEFAULT_WEFF_CACHE
+    from scipy.interpolate import RegularGridInterpolator
+    cache = cache or DEFAULT_WEFF_CACHE
+    dws_mm = np.geomspace(3.0, 60.0, 10)
+    Ls_km = np.geomspace(1.0, 22.0, 10)
     if os.path.exists(cache):
         d = np.load(cache)
-        pts, vals = d["pts"], d["vals"]
-        lin = LinearNDInterpolator(pts, vals); near = NearestNDInterpolator(pts, vals)
-
-        def weff_of(dw_mm, L_km):
-            v = lin(dw_mm, L_km)
-            return float(v) if np.isfinite(v) else float(near(dw_mm, L_km))
+        dws_mm, Ls_km, vals = d["dw_mm"], d["L_km"], d["w_eff"]
         print("  w_eff grid loaded from cache", flush=True)
-        return weff_of
-    dws = np.array([6, 10, 14, 20, 26]) * 1e-3
-    Ls = np.array([3, 5, 8, 12, 18, 22]) * 1e3
-    pts, vals = [], []
-    t0 = time.time()
-    for dw in dws:
-        for L in Ls:
-            cfg.physical.equilibrium_depth = float(L)
-            r = evolve_geometry_coupled(cfg, float(dw), n_e=7, w_eff_max=0.06, w_floor=2e-3)
-            if r.overflow and np.isfinite(r.w_eff_overflow):
-                pts.append([dw * 1e3, L / 1e3]); vals.append(r.w_eff_overflow)
-        if verbose:
-            print(f"  w_eff grid dw={dw*1e3:.0f}mm done | elapsed {(time.time()-t0)/60:.1f}m",
-                  flush=True)
-    pts, vals = np.array(pts), np.array(vals)
-    np.savez(cache, pts=pts, vals=vals)
-    lin = LinearNDInterpolator(pts, vals)
-    near = NearestNDInterpolator(pts, vals)
+    else:
+        from joblib import Parallel, delayed
+        from enceladus_plume.wall_geometry import closure_width
+        import copy
+        t0 = time.time()
+        print(f"  building w_eff* grid ({len(dws_mm)}x{len(Ls_km)}) by bisection ...", flush=True)
+
+        def one(dw_mm, L_km):
+            c = copy.deepcopy(cfg); c.physical.equilibrium_depth = L_km * 1e3
+            we, ok = closure_width(c, dw_mm * 1e-3)
+            return we if ok else np.nan
+        flat = Parallel(n_jobs=n_jobs)(delayed(one)(a, b) for a in dws_mm for b in Ls_km)
+        vals = np.array(flat).reshape(len(dws_mm), len(Ls_km))
+        np.savez(cache, dw_mm=dws_mm, L_km=Ls_km, w_eff=vals)
+        print(f"  w_eff grid built in {(time.time()-t0)/60:.1f} min; nan cells: {int(np.isnan(vals).sum())}", flush=True)
+    # fill any non-reaching cells with the nearest finite value so the interpolant is defined
+    v = vals.copy()
+    if np.isnan(v).any():
+        from scipy.interpolate import NearestNDInterpolator
+        gi, gj = np.meshgrid(np.arange(len(dws_mm)), np.arange(len(Ls_km)), indexing="ij")
+        ok = ~np.isnan(v)
+        v[~ok] = NearestNDInterpolator(np.column_stack([gi[ok], gj[ok]]), v[ok])(gi[~ok], gj[~ok])
+    rgi = RegularGridInterpolator((np.log(dws_mm), np.log(Ls_km)), v, method="linear",
+                                  bounds_error=False, fill_value=None)
 
     def weff_of(dw_mm, L_km):
-        v = lin(dw_mm, L_km)
-        if not np.isfinite(v):
-            v = near(dw_mm, L_km)
-        return float(v)
+        x = np.log(np.clip(dw_mm, dws_mm[0], dws_mm[-1])); y = np.log(np.clip(L_km, Ls_km[0], Ls_km[-1]))
+        return float(rgi([[x, y]])[0])
     return weff_of
 
 
@@ -433,8 +437,12 @@ def _neg_loglike(theta, weff_of, lookup, cfg, ma_o, y_o, w_o):
     return 0.5 * float(c2)
 
 
-def fit_mle(lookup, cfg=None, seed=0):
-    """Continuous maximum-likelihood fit (global + local) over the free params."""
+def fit_mle(lookup, cfg=None, seed=0, single=False):
+    """Continuous maximum-likelihood fit (global + local) over the free params.
+
+    ``single=True`` fixes the forcing to the single cosine (alpha = 0) and fits only
+    (dw, L, sigma_phi); the result dict has the same keys with harm_scale = 0.
+    """
     from scipy.optimize import differential_evolution, minimize
     cfg = cfg or _cfg()
     ma_o, y_o, sig = np.loadtxt(_DATA, delimiter=",", skiprows=1).T
@@ -445,23 +453,28 @@ def fit_mle(lookup, cfg=None, seed=0):
     neval = {"n": 0}
     t0 = time.time()
 
+    def full(th):
+        th = np.asarray(th, dtype=float)
+        return np.array([th[0], th[1], 0.0, 0.0, th[2]]) if single else th
+
     def obj(th):
         neval["n"] += 1
-        v = _neg_loglike(th, *args)
+        v = _neg_loglike(full(th), *args)
         if neval["n"] % 25 == 0:
             print(f"  eval {neval['n']:4d} | best 2*NLL so far tracked by DE | "
                   f"elapsed {(time.time()-t0)/60:.1f}m", flush=True)
         return v
 
     print("  global search (differential_evolution)...", flush=True)
-    de = differential_evolution(obj, MLE_BOUNDS, maxiter=12, popsize=6, tol=1e-2,
+    bounds = [MLE_BOUNDS[0], MLE_BOUNDS[1], MLE_BOUNDS[4]] if single else MLE_BOUNDS
+    de = differential_evolution(obj, bounds, maxiter=12, popsize=6, tol=1e-2,
                                 rng=seed, polish=False, init="sobol")
     print(f"  DE done: 2*NLL={2*de.fun:.1f} at {np.round(de.x,2)}", flush=True)
     loc = minimize(obj, de.x, method="Nelder-Mead",
-                   bounds=MLE_BOUNDS, options=dict(xatol=1e-2, fatol=1e-2, maxiter=400))
-    x = loc.x if loc.fun < de.fun else de.x
+                   bounds=bounds, options=dict(xatol=1e-2, fatol=1e-2, maxiter=400))
+    x = full(loc.x if loc.fun < de.fun else de.x)
     chi2 = 2.0 * _neg_loglike(x, *args)
-    dof = len(ma_o) - 5
+    dof = len(ma_o) - (3 if single else 5)
     dw_mm, L_km, phi2, scale, sigma = x
     we = weff_of(dw_mm, L_km)
     cfg.physical.equilibrium_depth = L_km * 1e3
@@ -735,6 +748,8 @@ def main():
                     help="posterior via emulator + ensemble MCMC; writes corner plot")
     ap.add_argument("--barrier", default=None, choices=["backflow", "free"],
                     help="surface-barrier mode for the liquid column (default: config, 'backflow')")
+    ap.add_argument("--single", action="store_true",
+                    help="with --mle: single-cosine forcing (alpha fixed at 0; fit dw, L, sigma_phi)")
     ap.add_argument("--refine", action="store_true",
                     help="deterministic local (Nelder-Mead) refinement starting from the "
                          "result in --out; saves back to --out and redraws the overlay")
@@ -772,9 +787,9 @@ def main():
         plot_overlay(r, lut)
         return
     if args.mle:
-        r = fit_mle(lut)
+        r = fit_mle(lut, single=args.single)
         save_result(args.out, r)
-        print("\n=== MLE FIT (continuous) ===")
+        print(f"\n=== MLE FIT (continuous{', single cosine' if args.single else ''}) ===")
         print(f"  dw    = {r['dw']*1e3:.1f} mm")
         print(f"  L     = {r['L']/1e3:.1f} km")
         print(f"  w_eff*= {r['w_eff']*1e3:.2f} mm (on attractor, interpolated)")
