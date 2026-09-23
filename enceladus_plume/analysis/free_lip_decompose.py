@@ -56,7 +56,9 @@ fig.suptitle(rf"Free-lip best fit: $\Delta\delta$={dw*1e3:.0f} mm, $L$={L/1e3:.1
 fig.tight_layout(); fig.savefig(f"/tmp/freefit/decompose_{TAG}.png", dpi=140); print(f"wrote /tmp/freefit/decompose_{TAG}.png")
 # self-consistency: direct bisection closure width at the fitted (dw, L) vs the interpolated value used
 from enceladus_plume.wall_geometry import closure_width
-t0 = time.time(); we_direct, ok = closure_width(cfg, dw)
+t0 = time.time(); we_direct, ok = closure_width(cfg, dw, forcing_model="shifted-double-cosine" if al > 0 else "single-cosine",
+                                                 forcing_params=dict(second_harmonic_scale=al, second_harmonic_phase_deg=p2) if al > 0 else None,
+                                                 w_lo=max(1e-3, 0.5*we), w_hi=min(0.08, 2*we))
 print(f"direct closure width at (dw={dw*1e3:.1f} mm, L={L/1e3:.2f} km): {we_direct*1e3:.3f} mm (fit used {we*1e3:.3f} mm) [{(time.time()-t0):.0f} s]")
 ma_o, y_o, so = np.loadtxt(R._DATA, delimiter=",", skiprows=1).T; w_o = R._weights(ma_o, so)
 th = np.array([dw*1e3, L/1e3, p2, al, sig]); dof = float(r["dof"])

@@ -423,7 +423,8 @@ def closure_width(
     P = float(cfg.physical.orbital_period)
     L = float(cfg.physical.equilibrium_depth)
     D = L / 10.0
-    target = D - (BARRIER_DELTA if target_below_surface is None else target_below_surface)
+    dlt = getattr(cfg.liquid_dynamics, "barrier_delta", BARRIER_DELTA)
+    target = D - (dlt if target_below_surface is None else target_below_surface)
     t_in = np.arange(100, P + 1, 200.0)
 
     def hmax(we: float) -> float:

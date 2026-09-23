@@ -19,10 +19,14 @@ BOUNDS = np.array(R.MLE_BOUNDS, dtype=float)          # dw_mm, L_km, phi2, alpha
 _STATE = {}
 
 
+LUT_PATH = os.environ.get("ENC_LUT", R.DEFAULT_LOOKUP)
+BARRIER_DELTA_M = float(os.environ.get("ENC_BARRIER_DELTA", "10"))
+
+
 def _setup():
     if "lut" not in _STATE:
         from enceladus_plume.gas_dynamics.lookup import GasLookupTable
-        _STATE["lut"] = GasLookupTable(R.DEFAULT_LOOKUP, clean=True)
+        _STATE["lut"] = GasLookupTable(LUT_PATH, clean=True)
         _STATE["obs"] = np.loadtxt(R._DATA, delimiter=",", skiprows=1).T
         _STATE["weff0"] = R.build_weff_interp(R._cfg(), verbose=False)   # single-cosine grid: warm start
     return _STATE
@@ -52,7 +56,7 @@ def evaluate(theta, mode="free"):
     """Return (chi2, w_eff) for theta = (dw_mm, L_km, phi2, alpha, sigma)."""
     st = _setup()
     dw_mm, L_km, phi2, alpha, sigma = [float(x) for x in theta]
-    cfg = R._cfg(); cfg.liquid_dynamics.surface_barrier = mode
+    cfg = R._cfg(); cfg.liquid_dynamics.surface_barrier = mode; cfg.liquid_dynamics.barrier_delta = BARRIER_DELTA_M
     cfg.physical.equilibrium_depth = L_km * 1e3
     we0 = st["weff0"](dw_mm, L_km)
     try:
@@ -74,9 +78,11 @@ def main():
     ap.add_argument("--n1", type=int, default=300); ap.add_argument("--n2", type=int, default=200); ap.add_argument("--n3", type=int, default=150)
     ap.add_argument("--nm", type=int, default=60, help="Nelder-Mead iterations for the final serial polish")
     ap.add_argument("--out", default=None)
+    ap.add_argument("--tag", default="", help="suffix for the result/eval-log names")
     args = ap.parse_args()
+    print(f"LUT={LUT_PATH}  barrier_delta={BARRIER_DELTA_M} m", flush=True)
     from joblib import Parallel, delayed
-    tag = "diurnal_fit_free_single_sc" if args.single else "diurnal_fit_free_sc"
+    tag = ("diurnal_fit_free_single_sc" if args.single else "diurnal_fit_free_sc") + args.tag
     out = args.out or os.path.join(R._RESULTS, tag + ".json")
     logf = open(f"/tmp/freefit/{tag}_evals.csv", "a")
     single = args.single
@@ -121,13 +127,14 @@ def main():
     print(f"  NM polish [{(time.time()-t0)/60:.1f} min]: chi2 {c[k[0]]:.1f} -> {chi2:.1f}", flush=True)
     th = full(xb); dw_mm, L_km, phi2, alpha, sigma = th
     st = _setup(); ma_o, y_o, sig = st["obs"]; w_o = R._weights(ma_o, sig)
-    cfg = R._cfg(); cfg.liquid_dynamics.surface_barrier = "free"; cfg.physical.equilibrium_depth = L_km * 1e3
+    cfg = R._cfg(); cfg.liquid_dynamics.surface_barrier = "free"; cfg.liquid_dynamics.barrier_delta = BARRIER_DELTA_M; cfg.physical.equilibrium_depth = L_km * 1e3
     MA, fl = R._flux_curve(cfg, L_km * 1e3, dw_mm * 1e-3, we, st["lut"], harm_scale=alpha, harm_phase=phi2)
     o = np.argsort(MA); g, fs = R._ensemble_smooth(MA[o], fl[o], sigma); p0, A, _ = R._best_phi_A(g, fs, ma_o, y_o, w_o)
     dof = len(ma_o) - ndim
     res = dict(dw=dw_mm * 1e-3, L=L_km * 1e3, w_eff=we, harm_scale=float(alpha), harm_phase=float(phi2), sigma=float(sigma),
                phi0=float(p0), A=float(A), chi2=float(chi2), dof=int(dof), chi2_red=float(chi2 / dof),
-               barrier="free", closure="self-consistent bisection with fitted forcing")
+               barrier="free", closure="self-consistent bisection with fitted forcing",
+               barrier_delta_m=BARRIER_DELTA_M, lut=os.path.basename(LUT_PATH))
     R.save_result(out, res)
     print("=== SELF-CONSISTENT FIT ===")
     for kk, v in res.items(): print(f"  {kk} = {v}")

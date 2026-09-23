@@ -75,7 +75,7 @@ BARRIER_K = 10.0       # 1/s^2, restoring acceleration in the barrier zone
 BARRIER_DAMP = 5.0     # 1/s, velocity damping rate in the barrier zone
 
 
-def _make_clamped_rhs(raw_rhs, D: float, L: float, mode: str = "backflow"):
+def _make_clamped_rhs(raw_rhs, D: float, L: float, mode: str = "backflow", dlt: float = BARRIER_DELTA):
     """Wrap *raw_rhs* with the overflow/floor barrier.
 
     The water level is capped within ``BARRIER_DELTA`` of the surface (h = +D)
@@ -86,7 +86,6 @@ def _make_clamped_rhs(raw_rhs, D: float, L: float, mode: str = "backflow"):
     suppressed rise is spill (see :func:`compute_overflow_rate`). The barrier is
     C1 so explicit ODE solvers stay efficient.
     """
-    dlt = BARRIER_DELTA
     if mode not in ("backflow", "free"):
         raise ValueError(f"surface_barrier must be 'backflow' or 'free', got {mode!r}")
     free = mode == "free"
@@ -178,7 +177,8 @@ def liquid_dynamics(
                                  lp.npts_velocity, fric_kw)
         return [dvdt, dhdt]
 
-    rhs = _make_clamped_rhs(raw_rhs, D, L, getattr(lp, 'surface_barrier', 'backflow'))
+    rhs = _make_clamped_rhs(raw_rhs, D, L, getattr(lp, 'surface_barrier', 'backflow'),
+                            getattr(lp, 'barrier_delta', BARRIER_DELTA))
     n_output = max(int(t_stop / 10.0), 2000)
     t_eval = np.linspace(0.0, t_stop, n_output)
 
@@ -264,7 +264,8 @@ def liquid_dynamics_2022(
                                  lp.npts_velocity, fric_kw)
         return [dvdt, dhdt]
 
-    rhs = _make_clamped_rhs(raw_rhs, D, L, getattr(lp, 'surface_barrier', 'backflow'))
+    rhs = _make_clamped_rhs(raw_rhs, D, L, getattr(lp, 'surface_barrier', 'backflow'),
+                            getattr(lp, 'barrier_delta', BARRIER_DELTA))
     n_output = max(int(t_stop / 10.0), 2000)
     t_eval = np.linspace(0.0, t_stop, n_output)
 
@@ -348,10 +349,11 @@ def compute_overflow_rate(
 
     n = len(t_rec)
     overflow = np.zeros(n)
+    dlt = getattr(lp, 'barrier_delta', BARRIER_DELTA)
 
     for i in range(n):
         h = float(h_rec[i])
-        if h <= D - BARRIER_DELTA:
+        if h <= D - dlt:
             continue
 
         t = float(t_rec[i])
@@ -366,7 +368,7 @@ def compute_overflow_rate(
         if dhdt_raw <= 0.0:
             continue
 
-        pen = max(0.0, (h - (D - BARRIER_DELTA)) / BARRIER_DELTA)
+        pen = max(0.0, (h - (D - dlt)) / dlt)
         pen2 = pen * pen
         overflow[i] = dhdt_raw * pen2
 

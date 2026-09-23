@@ -66,6 +66,9 @@ class LiquidDynamicsParams:
     #               left untouched, so all of the rise the cap suppresses leaves
     #               the column as spill (compute_overflow_rate).
     surface_barrier: str = "backflow"
+    # Thickness (m) of the layer below the surface (and above the floor) over which
+    # the cap acts; the water level cannot approach the surface closer than ~this.
+    barrier_delta: float = 10.0
 
 
 @dataclass
