@@ -30,9 +30,12 @@ PAPER_PNG = "/home/sam2/dev/enceladus_plume_paper/Figures/Fig_schema.png"
 OUT = "/home/sam2/dev/enceladus_plume_paper/Figures/schematic_diurnal.pdf"
 
 
-def build(result_path, lookup_path, out=OUT, simple=False, flybys=None):
+def build(result_path, lookup_path, out=OUT, simple=False, flybys=None, barrier=None, barrier_delta=None):
     """simple=True draws only the fitted ensemble curve vs the data (plus A/B/C markers);
     flybys is an optional dict {label: mean anomaly deg} marked as ticks along the top."""
+    import run_fit as _R
+    if barrier: _R.BARRIER_MODE = barrier
+    if barrier_delta is not None: _R.BARRIER_DELTA_M = barrier_delta
     r = load_result(result_path)
     lut = GasLookupTable(lookup_path, clean=True)
     cfg = _cfg()
@@ -85,9 +88,9 @@ def build(result_path, lookup_path, out=OUT, simple=False, flybys=None):
         s = (gcur >= lo) & (gcur <= hi)
         idx = np.argmin(ens[s]) if want_min else np.argmax(ens[s])
         return float(gcur[s][idx])
-    C = _argpeak(120, 240)               # main peak (largest)
-    Asec = _argpeak(0, 110)              # secondary peak
-    B = _argpeak(min(Asec, C) + 5, max(Asec, C) - 5, want_min=True)  # trough
+    C = _argpeak(150, 240)               # main peak (largest)
+    Asec = _argpeak(10, 80)              # secondary peak
+    B = _argpeak(Asec + 10, C - 30, want_min=True)  # inter-peak trough
     print(f"markers: A(secondary)={Asec:.0f}  B(trough)={B:.0f}  C(main)={C:.0f}  phi0={phi0:.0f}")
 
     # --- compose ---
@@ -143,6 +146,7 @@ if __name__ == "__main__":
     ap.add_argument("--out", default=OUT)
     ap.add_argument("--simple", action="store_true",
                     help="only the fitted curve vs data (no water-level / width curves)")
+    ap.add_argument("--barrier", default=None); ap.add_argument("--barrier-delta", type=float, default=None)
     ap.add_argument("--flybys", default=None,
                     help="comma list label:MA[;MA...] to mark, e.g. 'E5 E17:208;209,E7:283'")
     args = ap.parse_args()
@@ -150,4 +154,4 @@ if __name__ == "__main__":
     if args.flybys:   # e.g. "E21 E2:84;97,E18 E5 E17:200;208;209,E7 E3:283;291"
         fb = {kv.split(":")[0]: [float(x) for x in kv.split(":")[1].split(";")]
               for kv in args.flybys.split(",")}
-    build(args.result, args.lookup, out=args.out, simple=args.simple, flybys=fb)
+    build(args.result, args.lookup, out=args.out, simple=args.simple, flybys=fb, barrier=args.barrier, barrier_delta=args.barrier_delta)

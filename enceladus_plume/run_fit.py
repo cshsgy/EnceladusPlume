@@ -125,13 +125,16 @@ def _weights(ma_o, sig):
 MLE_BOUNDS = [(3.0, 60.0), (1.0, 22.0), (0.0, 180.0), (0.0, 1.5), (0.0, 45.0)]
 
 
-BARRIER_MODE = None   # None -> config default ("backflow"); set by --barrier or by callers
+BARRIER_MODE = None      # None -> config default ("backflow"); set by --barrier or by callers
+BARRIER_DELTA_M = None   # None -> config default (10 m); cap-layer thickness override
 
 
 def _cfg():
     cfg = load_config()
     if BARRIER_MODE:
         cfg.liquid_dynamics.surface_barrier = BARRIER_MODE
+    if BARRIER_DELTA_M is not None:
+        cfg.liquid_dynamics.barrier_delta = float(BARRIER_DELTA_M)
     cfg.liquid_dynamics.n_periods = 2
     cfg.liquid_dynamics.max_step = 300.0
     cfg.liquid_dynamics.npts_velocity = 40   # h_max/D identical to 150 here, ~2x faster
@@ -750,14 +753,19 @@ def main():
                     help="surface-barrier mode for the liquid column (default: config, 'backflow')")
     ap.add_argument("--single", action="store_true",
                     help="with --mle: single-cosine forcing (alpha fixed at 0; fit dw, L, sigma_phi)")
+    ap.add_argument("--barrier-delta", type=float, default=None,
+                    help="cap-layer thickness in m (default: config, 10 m)")
     ap.add_argument("--refine", action="store_true",
                     help="deterministic local (Nelder-Mead) refinement starting from the "
                          "result in --out; saves back to --out and redraws the overlay")
     args = ap.parse_args()
+    global BARRIER_MODE, BARRIER_DELTA_M
     if args.barrier:
-        global BARRIER_MODE
         BARRIER_MODE = args.barrier
         print(f"  surface barrier mode: {args.barrier}", flush=True)
+    if args.barrier_delta is not None:
+        BARRIER_DELTA_M = args.barrier_delta
+        print(f"  cap-layer thickness: {args.barrier_delta} m", flush=True)
     if args.ensemble:
         r = load_result(args.out)
         plot_ensemble(r, GasLookupTable(args.lookup, clean=True))
