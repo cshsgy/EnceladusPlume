@@ -317,16 +317,19 @@ def fit_ensemble(result, lookup, cfg=None):
     o = np.argsort(MA_m); MA_m, flux_m = MA_m[o], flux_m[o]
     best = (0.0, np.inf, np.nan, np.nan)
     c0 = np.inf
-    for sigma in np.arange(0.0, 40.1, 1.0):
+    sig_grid = np.arange(0.0, 40.1, 1.0)
+    if "sigma" in result and float(result.get("harm_scale", 0.0)) == 0.0 and result.get("barrier", "") == "free":
+        sig_grid = np.array([0.0, float(result["sigma"])])   # adopted single-cosine fit: use its sigma
+    for sigma in sig_grid:
         g, fs = _ensemble_smooth(MA_m, flux_m, sigma)
         p0, A, c2 = _best_phi_A(g, fs, ma_o, y_o, w_o)
         if sigma == 0.0:
             c0 = c2
         if c2 < best[1]:
             best = (float(sigma), c2, float(p0), float(A))
-    dof = len(ma_o) - 5  # + sigma vs the single-crack's 4
+    dof = len(ma_o) - 5  # dw, L, sigma, phi0, A
     return dict(sigma=best[0], chi2=best[1], chi2_red=best[1] / dof, dof=int(dof),
-                phi0=best[2], A=best[3], chi2_single=c0, chi2_single_red=c0 / (dof + 1),
+                phi0=best[2], A=best[3], chi2_single=c0, chi2_single_red=c0 / dof,
                 dw=dw, L=L, w_eff=we, harm_scale=hs, harm_phase=hp)
 
 
@@ -639,7 +642,7 @@ def plot_corner(samples, labels, truths=None, out=None):
                 a.hist(samples[:, i], bins=30, color="tab:blue", histtype="stepfilled", alpha=0.6)
                 a.axvline(q[1, i], color="k", lw=1); a.axvline(q[0, i], color="k", ls="--", lw=0.8)
                 a.axvline(q[2, i], color="k", ls="--", lw=0.8)
-                a.set_title(f"{labels[i]}\n${q[1,i]:.1f}^{{+{q[2,i]-q[1,i]:.1f}}}_{{-{q[1,i]-q[0,i]:.1f}}}$",
+                a.set_title(f"{labels[i]}\n${q[1,i]:.2f}^{{+{q[2,i]-q[1,i]:.2f}}}_{{-{q[1,i]-q[0,i]:.2f}}}$",
                             fontsize=8)
             else:
                 a.hist2d(samples[:, j], samples[:, i], bins=30, cmap="Blues")
@@ -704,8 +707,8 @@ def plot_overlay(result, lookup, cfg=None, out=None):
     # (a) observed emission vs the best-fit diurnal profile
     ax.errorbar(ma_o, y_o, yerr=sig, fmt="o", ms=4, color="k", lw=1,
                 capsize=2, label="observed (digitized, Ingersoll+ 2020)")
-    slab = (f"best fit: $\\Delta\\delta$={dw*1e3:.0f} mm, $L$={L/1e3:.0f} km, "
-            f"$\\alpha$={hs:.1f}@{hp:.0f}$^\\circ$"
+    slab = (f"best fit: $\\Delta\\delta$={dw*1e3:.1f} mm, $L$={L/1e3:.2f} km"
+            + (f", $\\alpha$={hs:.1f}@{hp:.0f}$^\\circ$" if hs > 0 else "")
             + (f", $\\sigma_\\phi$={sigma:.0f}$^\\circ$" if sigma > 0 else ""))
     ax.plot(grid, model, "-", color="tab:red", lw=1.8, label=slab)
     ax.set_xlim(0, 360); ax.set_xticks(range(0, 361, 90))
@@ -720,10 +723,11 @@ def plot_overlay(result, lookup, cfg=None, out=None):
                            second_harmonic_scale=hs,
                            second_harmonic_phase_deg=hp) - 1.0
     prof_sin = width_scale(ph, 2.0, forcing_model=FORCING_SINGLE_COSINE) - 1.0
-    axb.plot(grid, prof_sin, "--", color="0.55", lw=1.6,
-             label=r"single cosine ($\alpha=0$)")
+    if hs > 0:
+        axb.plot(grid, prof_sin, "--", color="0.55", lw=1.6,
+                 label=r"single cosine ($\alpha=0$)")
     axb.plot(grid, prof_fit, "-", color="tab:blue", lw=2.0,
-             label=rf"fitted double-cosine ($\alpha$={hs:.1f}, $\phi_2$={hp:.0f}$^\circ$)")
+             label=(rf"fitted two-harmonic forcing ($\alpha$={hs:.1f}, $\phi_2$={hp:.0f}$^\circ$)" if hs > 0 else "adopted forcing (single cosine)"))
     axb.set_xlim(0, 360); axb.set_xticks(range(0, 361, 90)); axb.set_ylim(-0.03, 1.05)
     axb.set_xlabel("mean anomaly [deg]")
     axb.set_ylabel(r"normalized crack width $(\delta-\delta_{\min})/\Delta\delta$")
