@@ -109,7 +109,9 @@ def miki_model_full(
             Ev[i] = 0.0
 
         if Ev[i] > 0:
-            T[i] = (phi * T[i - 1] + 2.0 * dz * Ev[i] * Tw[i]) / (phi + 2.0 * Ev[i])
+            # Use the same added-vapor weight in both parts of the mixture.
+            added_flux = 2.0 * dz * Ev[i]
+            T[i] = (phi * T[i - 1] + added_flux * Tw[i]) / (phi + added_flux)
         else:
             T[i] = T[i - 1]
 
