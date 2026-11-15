@@ -5,6 +5,7 @@ flux curve for several tau; also the Hertz-Knudsen numbers behind tau ~ rho*d_po
 Run from the package dir: OMP_NUM_THREADS=1 PYTHONPATH=. python analysis/overflow_tau_sensitivity.py
 """
 import os, sys, numpy as np
+_trapz = getattr(np, "trapezoid", getattr(np, "trapz", None))  # numpy>=2.0 renamed trapz
 import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import run_fit as R
@@ -31,9 +32,9 @@ dhdt_of = compute_overflow_rate(t, v, h, w_in, t_in, L, cfg)          # m/s lost
 liq_raw = rho_w * w * dhdt_of                                          # kg/s per m, liquid crossing the lip
 m = t >= (t[-1] - P); o = np.argsort(t[m]); tm = t[m][o]; MA = (tm - tm[0]) / P * 360.0
 CL = 500e3
-print(f"cycle-mean vapor at vent {np.trapz(gas[m][o], tm)/P*CL:.0f} kg/s")
-print(f"raw liquid overflow: cycle-mean {np.trapz(liq_raw[m][o], tm)/P*CL:.2f} kg/s, peak {liq_raw[m][o].max()*CL:.1f} kg/s, "
-      f"vapor from it (x f_evap) cycle-mean {np.trapz(liq_raw[m][o], tm)/P*CL*f_evap:.2f} kg/s")
+print(f"cycle-mean vapor at vent {_trapz(gas[m][o], tm)/P*CL:.0f} kg/s")
+print(f"raw liquid overflow: cycle-mean {_trapz(liq_raw[m][o], tm)/P*CL:.2f} kg/s, peak {liq_raw[m][o].max()*CL:.1f} kg/s, "
+      f"vapor from it (x f_evap) cycle-mean {_trapz(liq_raw[m][o], tm)/P*CL*f_evap:.2f} kg/s")
 at = h[m][o] >= D - BARRIER_DELTA
 print(f"time at the surface barrier: {at.mean()*100:.1f}% of the cycle ({at.mean()*P/3600:.1f} h); h_max/D={h[m][o].max()/D:.4f}; "
       f"max |v| {np.abs(v[m][o]).max():.2f} m/s; mean |v| at barrier {np.abs(v[m][o][at]).mean() if at.any() else 0:.3f} m/s; max dh/dt lost {dhdt_of[m][o].max():.2e} m/s")

@@ -5,6 +5,7 @@ bound in which all displaced water spills. Run from the package dir:
     OMP_NUM_THREADS=1 PYTHONPATH=. python analysis/overflow_partition.py
 """
 import os, sys, numpy as np
+_trapz = getattr(np, "trapezoid", getattr(np, "trapz", None))  # numpy>=2.0 renamed trapz
 sys.path.insert(0, os.getcwd())
 import run_fit as R
 from enceladus_plume.utils import build_width_series
@@ -30,9 +31,9 @@ print(f"during plateau: v0 (m/s) mean {v[at].mean():+.3f} min {v[at].min():+.3f}
 print(f"closing (piston>0) fraction of plateau: {(piston[at]>0).mean():.2f}")
 # spill upper bound: all displaced volume while at cap & closing leaves the lip
 up = np.clip(piston,0,None)*at
-spill_up = np.trapz(rho*w*up, t)/P*CL
+spill_up = _trapz(rho*w*up, t)/P*CL
 print(f"UPPER BOUND spill (all piston displacement at cap exits lip): cycle-mean {spill_up:.0f} kg/s liquid, x0.12 -> {0.12*spill_up:.0f} kg/s vapor; peak {np.max(rho*w*up)*CL:.0f} kg/s")
-print(f"model diagnosed spill: {np.trapz(rho*w*of,t)/P*CL:.2f} kg/s")
+print(f"model diagnosed spill: {_trapz(rho*w*of,t)/P*CL:.2f} kg/s")
 # gravity-driven backflow capacity through the column at the cap: g*D*(...)/(L+D) balanced by wall friction 2Cf v^2/w
 for Cf in [0.002, 0.005, 0.01]:
     vb = np.sqrt(g*D*we/(2*Cf*(L+D))); print(f"  gravity/friction backflow speed for Cf={Cf}: {vb:.3f} m/s  (piston mean at cap {piston[at].mean():+.3f})")

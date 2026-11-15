@@ -46,6 +46,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
+_trapz = getattr(np, "trapezoid", getattr(np, "trapz", None))  # numpy>=2.0 renamed trapz
 
 from .config import Config
 from .friction import fanning_friction_factor
@@ -95,8 +96,8 @@ class WallBudgetResult:
             f"  net deposition (top, zeta>=L):  peak {np.nanmax(self.net_thickness)*1e3:+.3e} mm/cycle\n"
             f"  net change above water level:   mean {np.nanmean(top)*1e3:+.3e} mm/cycle\n"
             f"  net change below water level:   mean {np.nanmean(bot)*1e3:+.3e} mm/cycle\n"
-            f"  total deposited:  {np.trapz(self.deposition, zc):.3e} kg/m per cycle\n"
-            f"  total melted:     {np.trapz(self.melt, zc):.3e} kg/m per cycle\n"
+            f"  total deposited:  {_trapz(self.deposition, zc):.3e} kg/m per cycle\n"
+            f"  total melted:     {_trapz(self.melt, zc):.3e} kg/m per cycle\n"
             f"  healing time to close opening: {self.healing_cycles:.3e} cycles "
             f"({self.healing_years:.3e} yr)"
         )

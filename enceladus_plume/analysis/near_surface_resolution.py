@@ -7,6 +7,7 @@ peaks, spill, and the minimum gas-column length reached.
     OMP_NUM_THREADS=1 PYTHONPATH=. python analysis/near_surface_resolution.py [--lut PATH]
 """
 import argparse, os, sys, numpy as np
+_trapz = getattr(np, "trapezoid", getattr(np, "trapz", None))  # numpy>=2.0 renamed trapz
 sys.path.insert(0, os.getcwd())
 import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 import run_fit as R
@@ -49,7 +50,7 @@ for ci, (dw_mm, L_km) in enumerate(cases):
             npk = len(set(np.mod(pk, len(fs)))) if len(pk) else 0
             col_min = (D - h[m][o]).min()
             print(f"dw={dw_mm:5.1f} L={L_km:5.2f} dlt={dlt:4.1f} w_eff={we*1e3:6.2f} ({fac:.2f} w*): peaks={npk} "
-                  f"gas mean {np.trapz(gas[m][o],t[m][o])/P*CL:7.0f} peak {gas[m][o].max()*CL:8.0f} | spill liq mean {np.trapz(spill[m][o],t[m][o])/P*CL:8.0f} | min column {col_min:6.2f} m  h_max/D {h[m][o].max()/D:.4f}", flush=True)
+                  f"gas mean {_trapz(gas[m][o],t[m][o])/P*CL:7.0f} peak {gas[m][o].max()*CL:8.0f} | spill liq mean {_trapz(spill[m][o],t[m][o])/P*CL:8.0f} | min column {col_min:6.2f} m  h_max/D {h[m][o].max()/D:.4f}", flush=True)
             ax.plot(g, fs * CL, color=c, lw=1.5, label=f"{fac:.2f} w* ({we*1e3:.1f} mm)")
         ax.set_yscale("log"); ax.set_title(rf"$\Delta\delta$={dw_mm:g} mm, L={L_km:g} km, cap layer {dlt:g} m", fontsize=9); ax.grid(alpha=0.3)
         if di == 0: ax.set_ylabel("flux [kg/s]")

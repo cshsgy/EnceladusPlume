@@ -4,6 +4,7 @@ water level, time at the surface, tau sensitivity, and a direct check of the
 attractor closure width at the fitted (dw, L) in free mode.
 PYTHONPATH=. python analysis/free_lip_decompose.py"""
 import os, sys, time, numpy as np
+_trapz = getattr(np, "trapezoid", getattr(np, "trapz", None))  # numpy>=2.0 renamed trapz
 sys.path.insert(0, os.getcwd())
 import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 import run_fit as R
@@ -36,7 +37,7 @@ spill_liq = rho * w * compute_overflow_rate(t, v, h, w_in, t_in, L, cfg)
 m = t >= t[-1] - P; o = np.argsort(t[m]); tm = t[m][o]; MA = (tm - tm[0]) / P * 360
 at = h[m][o] >= D - BARRIER_DELTA
 print(f"h_max/D={h[m][o].max()/D:.3f}, h_min/D={h[m][o].min()/D:.3f}; time at surface {at.mean()*P/3600:.2f} h ({at.mean()*100:.1f}% of cycle)")
-print(f"cycle-mean: vapor at vent {np.trapz(gas[m][o],tm)/P*CL:.0f} kg/s | evaporation at liquid {np.trapz(evap[m][o],tm)/P*CL:.0f} | spill liquid {np.trapz(spill_liq[m][o],tm)/P*CL:.0f} kg/s -> vapor {f_evap*np.trapz(spill_liq[m][o],tm)/P*CL:.0f} kg/s")
+print(f"cycle-mean: vapor at vent {_trapz(gas[m][o],tm)/P*CL:.0f} kg/s | evaporation at liquid {_trapz(evap[m][o],tm)/P*CL:.0f} | spill liquid {_trapz(spill_liq[m][o],tm)/P*CL:.0f} kg/s -> vapor {f_evap*_trapz(spill_liq[m][o],tm)/P*CL:.0f} kg/s")
 print(f"peak: vapor {gas[m][o].max()*CL:.0f} kg/s; spill liquid {spill_liq[m][o].max()*CL:.0f} kg/s")
 grid = np.linspace(0, 360, 721); obs = lambda x, xg: np.interp((grid - p0) % 360.0, xg, x, period=360.0)
 ma_o, y_o, so = np.loadtxt(R._DATA, delimiter=",", skiprows=1).T

@@ -1,6 +1,7 @@
 """Tests for the wall ice mass-budget diagnostic (stage A)."""
 
 import numpy as np
+_trapz = getattr(np, "trapezoid", getattr(np, "trapz", None))  # numpy>=2.0 renamed trapz
 import pytest
 
 from enceladus_plume.config import load_config
@@ -50,7 +51,7 @@ def test_deposition_above_melt_below():
     res = wall_mass_budget(t, h, w, v, r, cfg, Tb=272.6, n_z=400)
     L = res.L
     # essentially all deposition is above the equilibrium water level
-    assert np.trapz(res.deposition[res.zeta >= L], res.zeta[res.zeta >= L]) > 0
+    assert _trapz(res.deposition[res.zeta >= L], res.zeta[res.zeta >= L]) > 0
     assert np.allclose(res.deposition[res.zeta < L - 50.0], 0.0)
     # melt only occurs below the water level
     assert np.allclose(res.melt[res.zeta > L + 50.0], 0.0)
@@ -64,6 +65,6 @@ def test_choke_cap_never_exceeds_uncapped():
     # a strong cap: r close to 1 -> tiny inlet flux phi -> early choke
     res_capped = wall_mass_budget(t, h, w, v, np.full_like(t, 0.999),
                                   cfg, Tb=272.6, n_z=400)
-    tot_un = np.trapz(res_uncapped.deposition, res_uncapped.zeta)
-    tot_cap = np.trapz(res_capped.deposition, res_capped.zeta)
+    tot_un = _trapz(res_uncapped.deposition, res_uncapped.zeta)
+    tot_cap = _trapz(res_capped.deposition, res_capped.zeta)
     assert tot_cap <= tot_un + 1e-9

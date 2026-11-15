@@ -6,6 +6,7 @@ at the wall-condensation supply, for several tidal width amplitudes at L = 1.55 
     OMP_NUM_THREADS=1 PYTHONPATH=. python analysis/fig_selfsealing_d1.py
 """
 import os, sys, numpy as np
+_trapz = getattr(np, "trapezoid", getattr(np, "trapz", None))  # numpy>=2.0 renamed trapz
 sys.path.insert(0, os.getcwd()); sys.path.insert(0, os.path.join(os.getcwd(), "analysis"))
 import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 import single_d1_common as C, run_fit as R
@@ -22,7 +23,7 @@ for dw in dws:
     D = L0 * 100.0
     r, _, _, _ = st["lut"].query_vectorized(R.TB, np.clip(D - h, st["lut"].depth.min(), st["lut"].depth.max()), np.clip(w, st["lut"].delta.min(), st["lut"].delta.max()))
     b = wall_mass_budget(t, h, w, v, r, cfg, R.TB, n_z=300)
-    M = np.trapz(b.deposition, b.zeta)                 # kg per m of crack per wall per orbit
+    M = _trapz(b.deposition, b.zeta)                 # kg per m of crack per wall per orbit
     rate_mm = 2 * M / 917.0 / (L0 * 1e3) * 1e3          # column-averaged narrowing, mm per orbit (both walls)
     dep.append(rate_mm); wstar.append(ws * 1e3)
     print(f"dw={dw:5.1f} mm: deposit {M:.1f} kg/m/wall/orbit, column-averaged narrowing {rate_mm*1e3:.1f} um/orbit, closure width {wstar[-1]:.2f} mm", flush=True)
