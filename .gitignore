@@ -4,6 +4,7 @@
 *.txt
 *.pyc
 !requirements.txt
+!cpp/CMakeLists.txt
 
 .vscode/
 
