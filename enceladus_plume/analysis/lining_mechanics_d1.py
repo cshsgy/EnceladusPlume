@@ -37,6 +37,8 @@ ap.add_argument("--cycles", type=float, default=5.0, help="orbits per iteration"
 ap.add_argument("--iters", type=int, default=60)
 ap.add_argument("--nz", type=int, default=300)
 ap.add_argument("--nt", type=int, default=80)
+ap.add_argument("--mech", choices=["crush","squash"], default="crush", help="crush: excess lining removed (falls into the liquid); squash: excess extruded along the wall, mass conserved")
+ap.add_argument("--lip", choices=["down","out"], default="down", help="squash only: excess at the lip is extruded down the crack or out of the mouth")
 ap.add_argument("--wipe", action="store_true", help="also remove the lining wherever the water reaches")
 ap.add_argument("--nochoke", action="store_true", help="no plume-choke cap on the deposition (upper bound)")
 ap.add_argument("--sigma-tide", type=float, default=0.1, help="tidal stress [MPa] for the contact-stress diagnostic")
@@ -55,7 +57,7 @@ dstar = st["weff_of"](a.dw, a.L)
 delta0 = (a.delta0 * 1e-3) if a.delta0 else dstar
 gfloor = a.gfloor * 1e-3
 H = surface  # shell thickness along the stripe
-print(f"[{a.tag}] dw={a.dw} mm L={a.L} km delta*={dstar*1e3:.3f} mm delta_r,min={delta0*1e3:.3f} mm "
+print(f"[{a.tag}] mech={a.mech} lip={a.lip} dw={a.dw} mm L={a.L} km delta*={dstar*1e3:.3f} mm delta_r,min={delta0*1e3:.3f} mm "
       f"gfloor={a.gfloor} mm wipe={a.wipe} choke={not a.nochoke}", flush=True)
 
 zeta = _make_grid(surface, a.nz)
@@ -63,6 +65,54 @@ dep_flux = _condensation_flux(zeta, surface, R.TB, Lv)        # kg m^-2 s^-1, >=
 ec = vapor_pressure(273.15) / np.sqrt(2.0 * np.pi * _RG); bv = Lv / _RG
 t_in = np.arange(100, P + 1, 200.0)
 w_in = build_width_series(t_in, 1 + a.dw * 1e-3 / delta0, delta0, orbital_period=P)
+from enceladus_plume.friction import fanning_friction_factor
+def melt_tapered(zeta, tc, hc, wc, vc, dwc, dt, e, gfloor):
+    """Ice removed by wall dissipation q = Cf rho_w |v|^3 on the covered wall, with the
+    velocity from continuity in the lined crack (kg/m^2 per orbit)."""
+    melt = np.zeros(len(zeta)); rho_w = float(phys.liquid_density)
+    for k in range(len(tc)):
+        covered = zeta <= L + hc[k]
+        if not np.any(covered): continue
+        zc = zeta[covered]; d_eff = np.clip(wc[k] - 2 * e[covered], gfloor, None)
+        v_prof = (wc[k] * vc[k] - dwc[k] * zc) / d_eff
+        if fp.liquid_model == "constant":
+            Cf = float(fp.liquid_Cf_constant)
+        else:
+            Cf = np.array([fanning_friction_factor(fp.liquid_model, vv, dd, rho=rho_w, mu=float(phys.liquid_viscosity),
+                                                   roughness=float(fp.roughness), C_lam=float(fp.C_lam)) for vv, dd in zip(v_prof, d_eff)])
+        melt[covered] += Cf * rho_w * np.abs(v_prof) ** 3 / Lf * dt[k]
+    return melt
+
+def squash(e_new, e_max, zeta, lip):
+    """Extrude the excess lining along the wall, conserving volume per unit crack length.
+    lip="down": everything is pushed down the crack (top -> bottom sweep).
+    lip="out":  the contact zone attached to the mouth is squeezed toward both free ends,
+                with the divide at its middle: the upper half is extruded out of the mouth.
+    Returns (e, extruded_out) with extruded_out the volume lost out of the mouth."""
+    e = e_new.copy(); dz = np.gradient(zeta); out = 0.0
+    order = np.argsort(-zeta)                      # from the mouth downward
+    if lip == "out":
+        exc0 = np.clip(e - e_max, 0.0, None)
+        n_top = 0
+        for i in order:                            # contiguous contact zone from the mouth
+            if exc0[i] > 0 or e[i] >= e_max[i] - 1e-9: n_top += 1
+            else: break
+        top_zone = order[:n_top]
+        if n_top > 0:
+            z_div = 0.5 * (zeta[top_zone].max() + zeta[top_zone].min())
+            for i in top_zone:
+                if zeta[i] >= z_div and exc0[i] > 0:
+                    out += exc0[i] * dz[i]; e[i] = e_max[i]
+    for j, i in enumerate(order):
+        exc = e[i] - e_max[i]
+        if exc <= 0: continue
+        e[i] = e_max[i]
+        if j + 1 < len(order):
+            k = order[j + 1]; e[k] += exc * dz[i] / dz[k]
+        else:
+            out += exc * dz[i]                     # reached the floor: nowhere to go
+    return e, out
+
 e_max = np.full(len(zeta), 0.5 * (delta0 - gfloor))             # mechanical ceiling of the lining
 
 e = np.zeros(len(zeta)); hist = []
@@ -84,23 +134,29 @@ for it in range(1, a.iters + 1):
         rc = np.where(np.isfinite(rc), rc, np.nanmean(rc[np.isfinite(rc)]) if np.any(np.isfinite(rc)) else 0.77)
     phi_t = (1.0 - rc) * evaporation_rate_simple(ec, bv, R.TB)
     dep = _deposition_per_cycle(zeta, dep_flux, tc, hc, wc, phi_t, rc, e, L, dt)      # kg/m^2 per orbit
-    melt = _friction_melt_per_cycle(zeta, tc, hc, wc, vc, dwc, dt, fp, phys, Lf, L)
+    melt = melt_tapered(zeta, tc, hc, wc, vc, dwc, dt, e, gfloor)
     e_new = e + (dep - melt) / RHO_ICE * a.cycles
     e_new = np.clip(e_new, 0.0, None)
-    crushed = np.clip(e_new - e_max, 0.0, None); e_new = np.minimum(e_new, e_max)
+    if a.mech == "crush":
+        crushed = np.clip(e_new - e_max, 0.0, None); e_new = np.minimum(e_new, e_max); V_out = 0.0
+    else:
+        e_new, V_out = squash(e_new, e_max, zeta, a.lip); crushed = np.zeros(len(zeta))
     if a.wipe:
         wiped = zeta <= L + hmax; crushed[wiped] += e_new[wiped]; e_new[wiped] = 0.0
     contact = e_new >= e_max - 1e-6
     l_c = float(_trapz(contact.astype(float), zeta))
     sigma_contact = a.sigma_tide * 1e6 * H / l_c if l_c > 0 else np.inf
     M_dep, M_melt, M_crush = (float(_trapz(x, zeta)) for x in (dep, melt, crushed * RHO_ICE / a.cycles))
+    M_crush += V_out * RHO_ICE / a.cycles   # squash: mass extruded out of the crack
+    M_lining = float(_trapz(e_new, zeta)) * RHO_ICE
+    front = float(zeta[contact].min()) if contact.any() else surface
     step = float(np.nanmax(np.abs(e_new - e))); e = e_new
     gap_min = delta0 - 2 * e
     rec = dict(it=it, orbit=it * a.cycles, hmax=hmax, spill_frac=float(spill_mask.mean()), M_dep=M_dep, M_melt=M_melt, M_crush=M_crush,
-               l_c=l_c, sigma_contact_MPa=sigma_contact / 1e6, gap_mouth_mm=float(gap_min[-1] * 1e3),
+               l_c=l_c, sigma_contact_MPa=sigma_contact / 1e6, M_lining=M_lining, front_depth=surface - front, gap_mouth_mm=float(gap_min[-1] * 1e3),
                gap_mean_mm=float(gap_min.mean() * 1e3), gap_liquid_mean_mm=float(gap_min[zeta <= L].mean() * 1e3), step=step, secs=time.time() - t0)
     hist.append(rec)
-    print(f"[{a.tag}] it{it:3d} orbit {rec['orbit']:5.0f}: hmax {hmax:7.2f} m  dep {M_dep:5.1f} melt {M_melt:5.1f} crushed {M_crush:5.1f} kg/m/wall/orbit | "
+    print(f"[{a.tag}] it{it:3d} orbit {rec['orbit']:5.0f}: hmax {hmax:7.2f} m  dep {M_dep:5.1f} melt {M_melt:5.1f} out {M_crush:5.1f} lining {M_lining:7.0f} kg/m/wall | front {surface-front:7.1f} m "
           f"l_c {l_c:7.1f} m  sigma_contact {sigma_contact/1e6:8.2f} MPa | gap mouth {rec['gap_mouth_mm']:.2f} mean {rec['gap_mean_mm']:.2f} liquid {rec['gap_liquid_mean_mm']:.2f} mm | step {step*1e3:.3f} mm {rec['secs']:.0f}s", flush=True)
     np.savez(os.path.join(a.out, f"lining_{a.tag}.npz"), zeta=zeta, e=e, e_max=e_max, dep=dep, melt=melt, crushed=crushed, dep_flux=dep_flux,
              delta0=delta0, dstar=dstar, dw_mm=a.dw, L_km=a.L, gfloor=gfloor, hist=json.dumps(hist), args=json.dumps(vars(a)))
