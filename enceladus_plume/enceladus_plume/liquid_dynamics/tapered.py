@@ -198,7 +198,11 @@ def liquid_dynamics_tapered(
         dvdt, dhdt = derivative_tapered(v, h, g, zs, delta_z, dddt_z, ddddt_z, fric_kw)
         return [dvdt, dhdt]
 
-    rhs = _make_clamped_rhs(raw_rhs, D, L)
+    # Same surface treatment as the uniform-width solver (free lip / backflow,
+    # cap-layer thickness) so the tapered solver can be used for the adopted model.
+    from .solver import BARRIER_DELTA
+    rhs = _make_clamped_rhs(raw_rhs, D, L, getattr(lp, 'surface_barrier', 'backflow'),
+                            getattr(lp, 'barrier_delta', BARRIER_DELTA))
     n_output = max(int(t_stop / 10.0), 2000)
     t_eval = np.linspace(0.0, t_stop, n_output)
 
