@@ -39,6 +39,7 @@ ap.add_argument("--nz", type=int, default=300)
 ap.add_argument("--nt", type=int, default=80)
 ap.add_argument("--mech", choices=["crush","squash"], default="crush", help="crush: excess lining removed (falls into the liquid); squash: excess extruded along the wall, mass conserved")
 ap.add_argument("--lip", choices=["down","out"], default="down", help="squash only: excess at the lip is extruded down the crack or out of the mouth")
+ap.add_argument("--constrict", default=None, help="rock constriction DEPTH_M,HEIGHT_M,WIDTH_MM: a fixed band of the rock aperture narrowed to WIDTH_MM at the closing phase")
 ap.add_argument("--wipe", action="store_true", help="also remove the lining wherever the water reaches")
 ap.add_argument("--nochoke", action="store_true", help="no plume-choke cap on the deposition (upper bound)")
 ap.add_argument("--sigma-tide", type=float, default=0.1, help="tidal stress [MPa] for the contact-stress diagnostic")
@@ -113,19 +114,25 @@ def squash(e_new, e_max, zeta, lip):
             out += exc * dz[i]                     # reached the floor: nowhere to go
     return e, out
 
-e_max = np.full(len(zeta), 0.5 * (delta0 - gfloor))             # mechanical ceiling of the lining
+e_rock = np.zeros(len(zeta))
+if a.constrict:
+    cd, ch, cw = [float(x) for x in a.constrict.split(",")]
+    band = (surface - zeta >= cd) & (surface - zeta <= cd + ch)
+    e_rock[band] = 0.5 * (delta0 - cw * 1e-3)
+    print(f"[{a.tag}] rock constriction: {cw} mm at {cd}-{cd+ch} m below the mouth ({band.sum()} grid points)", flush=True)
+e_max = np.full(len(zeta), 0.5 * (delta0 - gfloor)) - e_rock      # mechanical ceiling of the ice lining
 
 e = np.zeros(len(zeta)); hist = []
 for it in range(1, a.iters + 1):
     t0 = time.time()
-    wt, ht, tt, vt = liquid_dynamics_tapered(w_in, t_in, L, cfg, e_ice_zeta=zeta, e_ice_values=e, w_floor=gfloor)
+    wt, ht, tt, vt = liquid_dynamics_tapered(w_in, t_in, L, cfg, e_ice_zeta=zeta, e_ice_values=e + e_rock, w_floor=gfloor)
     m = tt >= (tt[-1] - P)
     tc, hc, wc, vc = tt[m], ht[m], wt[m], vt[m]; dwc = np.gradient(wt, tt)[m]
     sel = np.linspace(0, len(tc) - 1, a.nt).round().astype(int)
     tc, hc, wc, vc, dwc = tc[sel], hc[sel], wc[sel], vc[sel], dwc[sel]; dt = np.gradient(tc)
     hmax = float(np.nanmax(hc)); spill_mask = (D - hc) <= 1.0
     # choke cap from the gas table at the mouth gap (the narrowest point)
-    e_top = float(np.interp(surface, zeta, e))
+    e_top = float(np.max(e + e_rock))
     w_mouth = np.clip(wc - 2 * e_top, gfloor, None)
     if a.nochoke:
         rc = np.zeros(len(tc))
@@ -133,8 +140,8 @@ for it in range(1, a.iters + 1):
         rc, *_ = lut.query_vectorized(R.TB, np.clip(D - hc, lut.depth.min(), lut.depth.max()), np.clip(w_mouth, lut.delta.min(), lut.delta.max()))
         rc = np.where(np.isfinite(rc), rc, np.nanmean(rc[np.isfinite(rc)]) if np.any(np.isfinite(rc)) else 0.77)
     phi_t = (1.0 - rc) * evaporation_rate_simple(ec, bv, R.TB)
-    dep = _deposition_per_cycle(zeta, dep_flux, tc, hc, wc, phi_t, rc, e, L, dt)      # kg/m^2 per orbit
-    melt = melt_tapered(zeta, tc, hc, wc, vc, dwc, dt, e, gfloor)
+    dep = _deposition_per_cycle(zeta, dep_flux, tc, hc, wc, phi_t, rc, e + e_rock, L, dt)      # kg/m^2 per orbit
+    melt = melt_tapered(zeta, tc, hc, wc, vc, dwc, dt, e + e_rock, gfloor)
     e_new = e + (dep - melt) / RHO_ICE * a.cycles
     e_new = np.clip(e_new, 0.0, None)
     if a.mech == "crush":
@@ -151,14 +158,14 @@ for it in range(1, a.iters + 1):
     M_lining = float(_trapz(e_new, zeta)) * RHO_ICE
     front = float(zeta[contact].min()) if contact.any() else surface
     step = float(np.nanmax(np.abs(e_new - e))); e = e_new
-    gap_min = delta0 - 2 * e
+    gap_min = delta0 - 2 * (e + e_rock)
     rec = dict(it=it, orbit=it * a.cycles, hmax=hmax, spill_frac=float(spill_mask.mean()), M_dep=M_dep, M_melt=M_melt, M_crush=M_crush,
                l_c=l_c, sigma_contact_MPa=sigma_contact / 1e6, M_lining=M_lining, front_depth=surface - front, gap_mouth_mm=float(gap_min[-1] * 1e3),
                gap_mean_mm=float(gap_min.mean() * 1e3), gap_liquid_mean_mm=float(gap_min[zeta <= L].mean() * 1e3), step=step, secs=time.time() - t0)
     hist.append(rec)
     print(f"[{a.tag}] it{it:3d} orbit {rec['orbit']:5.0f}: hmax {hmax:7.2f} m  dep {M_dep:5.1f} melt {M_melt:5.1f} out {M_crush:5.1f} lining {M_lining:7.0f} kg/m/wall | front {surface-front:7.1f} m "
           f"l_c {l_c:7.1f} m  sigma_contact {sigma_contact/1e6:8.2f} MPa | gap mouth {rec['gap_mouth_mm']:.2f} mean {rec['gap_mean_mm']:.2f} liquid {rec['gap_liquid_mean_mm']:.2f} mm | step {step*1e3:.3f} mm {rec['secs']:.0f}s", flush=True)
-    np.savez(os.path.join(a.out, f"lining_{a.tag}.npz"), zeta=zeta, e=e, e_max=e_max, dep=dep, melt=melt, crushed=crushed, dep_flux=dep_flux,
+    np.savez(os.path.join(a.out, f"lining_{a.tag}.npz"), zeta=zeta, e=e, e_rock=e_rock, e_max=e_max, dep=dep, melt=melt, crushed=crushed, dep_flux=dep_flux,
              delta0=delta0, dstar=dstar, dw_mm=a.dw, L_km=a.L, gfloor=gfloor, hist=json.dumps(hist), args=json.dumps(vars(a)))
     if step < 1e-6 and it > 3:
         print(f"[{a.tag}] converged", flush=True); break
