@@ -11,7 +11,7 @@ from joblib import Parallel, delayed
 from enceladus_plume.gas_dynamics.nozzle import solve_gas_column
 
 ap = argparse.ArgumentParser(); ap.add_argument("--workers", type=int, default=60)
-ap.add_argument("--out", default=os.path.join(R._RESULTS, "nozzle_survey")); ap.add_argument("--quick", action="store_true")
+ap.add_argument("--out", default=os.path.join(R._RESULTS, "nozzle_survey_v1")); ap.add_argument("--quick", action="store_true")
 a = ap.parse_args(); os.makedirs(a.out, exist_ok=True)
 
 HG = [2.0, 20.0, 100.0, 500.0, 1500.0]

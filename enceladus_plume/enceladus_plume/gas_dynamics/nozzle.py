@@ -116,7 +116,7 @@ def solve_gas_column(width_fn, Hg, *, Tb=272.6, gamma=1.33, rg=462.83, Lv=2.84e6
 
     t = 0.0; steps = 0; converged = False; res = np.inf; last = None; S_last = np.zeros(n)
     t_min = (10.0 + Hg / 20.0) if t_min is None else t_min   # sound crossings + evaporation turnover
-    Eb = 0.0
+    Eb = 0.0; F_top = 0.0
     flux_hist = []
     while t < t_max:
         rho, v, p, T = prim(U)
@@ -126,6 +126,7 @@ def solve_gas_column(width_fn, Hg, *, Tb=272.6, gamma=1.33, rg=462.83, Lv=2.84e6
         rL = np.concatenate([[rho[0]], rho]); vL = np.concatenate([[-v[0]], v]); pL = np.concatenate([[p[0]], p])
         rR = np.concatenate([rho, [rho[-1] * 1e-3]]); vR = np.concatenate([v, [max(v[-1], c[-1])]]); pR = np.concatenate([p, [p[-1] * 1e-3]])
         F = hll(rL, vL, pL, rR, vR, pR, w_e)              # (3, n+1)
+        F_top = float(F[0, -1])                           # mass actually leaving the mouth
         dU = -(F[:, 1:] - F[:, :-1]) / dz
         # sources: area, gravity, friction
         dU[1] += p * (w_e[1:] - w_e[:-1]) / dz - rho * g * w - 2.0 * Cf * rho * v * np.abs(v)
@@ -149,7 +150,7 @@ def solve_gas_column(width_fn, Hg, *, Tb=272.6, gamma=1.33, rg=462.83, Lv=2.84e6
         t += dt; steps += 1
         if steps % check_every == 0:
             rho, v, p, T = prim(U)
-            fo = float(rho[-1] * v[-1] * w[-1]); dep = float(np.sum(-S_last * dz)); ev = max(float(Eb), 1e-30)
+            fo = F_top; dep = float(np.sum(-S_last * dz)); ev = max(float(Eb), 1e-30)
             bal = (ev - dep - fo) / ev
             if last is not None:
                 res = max(abs(fo - last[0]), abs(dep - last[1])) / ev
@@ -166,5 +167,5 @@ def solve_gas_column(width_fn, Hg, *, Tb=272.6, gamma=1.33, rg=462.83, Lv=2.84e6
         Ev = 0.5 * S_last                                 # realized exchange per wall (mass-limited)
     Eb = max(ps_b * kin_b - p[0] / np.sqrt(2 * np.pi * rg * T[0]), 0.0) * w[0]
     return NozzleResult(z=z, w=w, d=d, rho=rho, v=v, p=p, T=T, M=M, Ev=Ev,
-                        flux_out=float(rho[-1] * v[-1] * w[-1]), evap_in=float(Eb),
+                        flux_out=F_top, evap_in=float(Eb),
                         deposit=float(np.sum(-S_last * dz)), converged=converged, steps=steps, residual=res)

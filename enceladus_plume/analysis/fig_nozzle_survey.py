@@ -9,7 +9,7 @@ import os, sys, glob, numpy as np
 sys.path.insert(0, os.getcwd()); import run_fit as R
 import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
-src = os.path.join(R._RESULTS, "nozzle_survey"); out = os.environ.get("ENC_PAPER_FIGS", "/tmp/newfigs"); os.makedirs(out, exist_ok=True)
+src = os.path.join(R._RESULTS, "nozzle_survey_v1"); out = os.environ.get("ENC_PAPER_FIGS", "/tmp/newfigs"); os.makedirs(out, exist_ok=True)
 P = 118800.0
 D = {os.path.basename(f)[:-4]: np.load(f) for f in glob.glob(os.path.join(src, "*.npz"))}
 print(len(D), "cases loaded")
