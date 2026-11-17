@@ -17,7 +17,7 @@ print(len(D), "cases loaded")
 def load(tag): return D.get(tag)
 
 # ---- fig 1: profiles
-for Hg, dm in [(100.0, 4.5), (500.0, 10.0), (1500.0, 20.0)]:
+for Hg, dm in [(20.0, 4.5), (100.0, 10.0), (500.0, 20.0), (1500.0, 20.0)]:
     u = load(f"u_H{Hg:g}_m{dm:g}")
     if u is None: continue
     fig, ax = plt.subplots(1, 5, figsize=(19, 4.6), sharey=True)
@@ -35,7 +35,7 @@ for Hg, dm in [(100.0, 4.5), (500.0, 10.0), (1500.0, 20.0)]:
     ax[0].set_yscale("log"); ax[0].set_ylim(Hg, 0.05); ax[0].set_ylabel("depth below the mouth [m]")
     ax[0].set_xscale("log"); ax[0].set_xlim(1e-2, 1e3); ax[0].set_xlabel("p [Pa]"); ax[0].set_title("(a) pressure", loc="left"); ax[0].legend(fontsize=7)
     ax[1].set_xlabel("Mach"); ax[1].set_xlim(0, 3); ax[1].axvline(1, color="0.5", lw=0.8, ls="--"); ax[1].set_title("(b) Mach", loc="left")
-    ax[2].set_xlabel("gas T [K]"); ax[2].set_xlim(0, 290); ax[2].set_title("(c) gas temperature", loc="left")
+    ax[2].set_xlabel("gas T [K]"); ax[2].set_xlim(150, 290); ax[2].set_title("(c) gas temperature", loc="left")
     ax[3].set_xscale("log"); ax[3].set_xlim(1e-4, 30); ax[3].set_xlabel("wall deposit [mm per wall per orbit]"); ax[3].set_title("(d) condensation on the wall", loc="left")
     ax[4].set_xscale("log"); ax[4].set_xlim(1e-4, 30); ax[4].set_xlabel(r"relative sealing rate $-\,\partial\ln\delta/\partial t$ [per orbit]"); ax[4].set_title("(e) where the gap closes fastest", loc="left"); ax[4].legend(fontsize=7)
     fig.suptitle(f"Gas column of length {Hg:g} m, mouth width {dm:g} mm: uniform crack vs an internal throat (Gaussian, half-height 3 m)", fontsize=10)
@@ -52,10 +52,10 @@ for dm in DMs:
             for iw, dt in enumerate(DT):
                 d = load(f"t_H{Hg:g}_m{dm:g}_z{zt:g}_w{dt:g}")
                 if d is None: continue
-                thr[iw, iz] = float(d["flux_out"]) / max(out_u, 1e-30)
+                thr[iw, iz] = float(d["flux_out"]) / max(float(d["evap_in"]), 1e-30)
                 zs[iw, iz] = Hg - float(d["z_sonic"]) if np.isfinite(float(d["z_sonic"])) else np.nan
                 loc[iw, iz] = d["d"][np.argmax(d["seal_rate"])]
-        for i, (arr, title, kw) in enumerate([(thr, "plume throttle: out / out(uniform)", dict(cmap="viridis", vmin=0, vmax=1.5)),
+        for i, (arr, title, kw) in enumerate([(thr, f"plume fraction out/evap (uniform crack: {float(u['flux_out'])/max(float(u['evap_in']),1e-30) if u is not None else float('nan'):.2f})", dict(cmap="viridis", vmin=0, vmax=1)),
                                               (zs, "depth of the sonic point [m]", dict(cmap="magma", norm=LogNorm(0.1, 2000))),
                                               (loc, "depth where the gap closes fastest [m]", dict(cmap="magma", norm=LogNorm(0.05, 2000)))]):
             im = ax[i, j].imshow(arr, origin="lower", aspect="auto", **kw)
