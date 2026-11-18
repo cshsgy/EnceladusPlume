@@ -89,7 +89,7 @@ def solve_gas_column(width_fn, Hg, *, Tb=272.6, gamma=1.33, rg=462.83, Lv=2.84e6
     edges = make_grid(Hg, n, dz_top); z = 0.5 * (edges[1:] + edges[:-1]); dz = np.diff(edges)
     w = np.maximum(width_fn(z), 1e-5); w_e = np.maximum(width_fn(edges), 1e-5)
     d = np.maximum(Hg - z, 0.5 * dz)                     # distance below the mouth
-    cv = rg / (gamma - 1); cp = gamma * cv
+    cv = rg / (gamma - 1); cp = gamma * cv; v_cap = 5.0 * np.sqrt(gamma * rg * Tb)   # speed cap (~2 km/s)
     # tabulate the wall heat flux q(Tw, d) per cell for interpolation in Tw
     Tw_tab = np.linspace(TE + 1.0, Tb + 2.0, 80)
     q_tab = ip_heat_flux(Tw_tab[None, :], d[:, None])      # (n, 80)
@@ -101,7 +101,7 @@ def solve_gas_column(width_fn, Hg, *, Tb=272.6, gamma=1.33, rg=462.83, Lv=2.84e6
     def prim(U):
         rho = np.maximum(U[0] / w, 1e-12); v = U[1] / (rho * w)
         empty = rho < 1e-8                                  # emptied cells carry no momentum
-        v = np.where(empty, 0.0, v); U[1] = np.where(empty, 0.0, U[1])
+        v = np.where(empty, 0.0, np.clip(v, -v_cap, v_cap)); U[1] = v * rho * w
         e = np.maximum(U[2] / (rho * w) - 0.5 * v**2, cv * 5.0)
         T = e / cv; p = (gamma - 1) * rho * e
         return rho, v, p, T
@@ -151,6 +151,12 @@ def solve_gas_column(width_fn, Hg, *, Tb=272.6, gamma=1.33, rg=462.83, Lv=2.84e6
         U = U + dt * dU
         t += dt; steps += 1
         if steps % check_every == 0:
+            if not np.isfinite(U).all():
+                if cfl > 0.06:
+                    if verbose: print(f"  non-finite state at t={t:.2f}s: restarting with cfl={cfl/2:.3f}", flush=True)
+                    return solve_gas_column(width_fn, Hg, Tb=Tb, gamma=gamma, rg=rg, Lv=Lv, g=g, Cf=Cf, n=n, dz_top=dz_top, t_max=t_max,
+                                            cfl=cfl / 2, tol=tol, check_every=check_every, wall=wall, verbose=verbose, t_min=t_min, max_steps=max_steps)
+                raise FloatingPointError("gas column blew up even at the smallest CFL")
             rho, v, p, T = prim(U)
             fo = F_top; dep = float(np.sum(-S_last * dz)); ev = max(float(Eb), 1e-30)
             bal = (ev - dep - fo) / ev

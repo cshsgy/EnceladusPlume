@@ -55,9 +55,13 @@ def gas_phase(hk, wk, e):
         Hg = 1.0; zw = surface - 1.0
     def wf(z): return np.clip(wk - 2 * np.interp(zw + z, zeta, e), 1e-4, None)
     n = 300 if Hg <= 100 else a.ngas
-    r = solve_gas_column(wf, Hg, n=n, dz_top=a.dztop, t_max=30 + 0.3 * Hg)
+    try:
+        r = solve_gas_column(wf, Hg, n=n, dz_top=a.dztop, t_max=30 + 0.3 * Hg)
+    except FloatingPointError as exc:
+        print(f"[{a.tag}] gas phase failed (Hg={Hg:.0f} m): {exc}; deposition set to zero for this phase", flush=True)
+        return np.zeros(len(zeta)), np.nan, np.nan, np.nan, False
     Ev = np.zeros(len(zeta)); above = zeta >= zw
-    Ev[above] = np.interp(zeta[above] - zw, r.z, r.Ev)
+    Ev[above] = np.nan_to_num(np.interp(zeta[above] - zw, r.z, r.Ev))
     ok = r.p > 1e-3; front = float(surface - (zw + r.z[ok].max())) if ok.any() else Hg
     return Ev, r.flux_out, r.evap_in, front, bool(r.converged)
 
@@ -77,6 +81,7 @@ for it in range(it0 + 1, it0 + a.iters + 1):
     dep = np.zeros(len(zeta)); flux = []; evap = []; fronts = []
     for Ev, fo, ev, fr, conv in res:
         dep += -Ev * P / a.phases; flux.append(fo); evap.append(ev); fronts.append(fr)
+    flux = [x for x in flux if np.isfinite(x)] or [np.nan]; fronts = [x for x in fronts if np.isfinite(x)] or [np.nan]
     # --- frictional melt on the covered wall
     sel = np.linspace(0, len(tc) - 1, 80).round().astype(int); dts = np.gradient(tc[sel])
     melt = np.zeros(len(zeta)); rho_w = float(phys.liquid_density); Lf = float(phys.latent_heat_fusion)
