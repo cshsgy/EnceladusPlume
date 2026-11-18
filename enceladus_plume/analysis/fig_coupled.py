@@ -29,7 +29,7 @@ for j, tag in enumerate(tags):
     ax[1, j].set_ylim(0, dm * 1e3 * 1.05); ax[1, j].set_xlabel("orbits"); ax[1, j].set_ylabel("gap at the closing phase [mm]"); ax[1, j].grid(alpha=.3); ax[1, j].legend(fontsize=7)
     ax[2, j].plot(o, [r["plume_mean"] * 5e5 for r in h], "o-", color="tab:green", ms=3, label="plume, orbit mean, 500 km [kg/s]")
     ax[2, j].set_ylabel("plume [kg/s]"); ax[2, j].set_xlabel("orbits"); ax[2, j].grid(alpha=.3); ax[2, j].set_ylim(0, None)
-    b = ax[2, j].twinx(); b.plot(o, [min(r["fronts"]) for r in h], "v--", color="tab:purple", ms=3, label="vapor front, shallowest phase [m]"); b.plot(o, [r["hmax_over_D"] * D for r in h], ":", color="tab:blue", label="water rise h_max [m]")
+    b = ax[2, j].twinx(); b.plot(o, [max(r["fronts"]) for r in h], "v--", color="tab:purple", ms=3, label="vapor front at low water [m]"); b.plot(o, [r["hmax_over_D"] * D for r in h], ":", color="tab:blue", label="water rise h_max [m]")
     b.set_ylabel("depth / height [m]"); b.set_ylim(0, 1.3 * D); hl, ll = ax[2, j].get_legend_handles_labels(); h2, l2 = b.get_legend_handles_labels(); ax[2, j].legend(hl + h2, ll + l2, fontsize=7)
 fig.suptitle("Coupled lining evolution (gas: variable-width column; liquid: tapered solver; melt: Churchill friction; mechanics: ceiling + crush or squash)", fontsize=10)
 fig.tight_layout(); f = os.path.join(out, "coupled_evolution.png"); fig.savefig(f, dpi=120); print("wrote", f)

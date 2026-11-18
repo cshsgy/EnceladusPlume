@@ -94,8 +94,9 @@ for it in range(1, a.iters + 1):
     if a.mech == "crush":
         removed = float(_trapz(np.clip(e_new - e_max, 0, None), zeta)) * RHO_ICE / cycles; e_new = np.minimum(e_new, e_max)
     elif a.mech == "lidfail":
-        over = e_new > e_max; removed = float(_trapz(np.where(over, e_new - 0.5 * e_max, 0.0), zeta)) * RHO_ICE / cycles
-        e_new = np.where(over, 0.5 * e_max, e_new)
+        over = (e_new + np.clip(rate, 0, None) * 1.0) > e_max        # bridges within the next orbit: sawtooth regime
+        removed = float(_trapz(np.where(over, np.clip(e_new - 0.5 * e_max, 0, None), 0.0), zeta)) * RHO_ICE / cycles
+        e_new = np.where(over, np.minimum(e_new, 0.5 * e_max), e_new)
     else:
         e_new, V_out = squash(e_new, e_max, zeta); removed = V_out * RHO_ICE / cycles
     e = e_new; orbit += cycles
