@@ -80,7 +80,7 @@ def make_grid(Hg, n, dz_top=0.05):
 
 def solve_gas_column(width_fn, Hg, *, Tb=272.6, gamma=1.33, rg=462.83, Lv=2.84e6, g=0.113,
                      Cf=0.002, n=600, dz_top=0.05, t_max=40.0, cfl=0.4, tol=1e-3,
-                     check_every=2000, wall=True, verbose=False, t_min=None):
+                     check_every=2000, wall=True, verbose=False, t_min=None, max_steps=3_000_000):
     """width_fn(z) -> gap [m] (z from the liquid surface up). Returns NozzleResult.
 
     Converged when the instantaneous mass balance evap = deposit + out closes to 2e-3 and the
@@ -100,6 +100,8 @@ def solve_gas_column(width_fn, Hg, *, Tb=272.6, gamma=1.33, rg=462.83, Lv=2.84e6
 
     def prim(U):
         rho = np.maximum(U[0] / w, 1e-12); v = U[1] / (rho * w)
+        empty = rho < 1e-8                                  # emptied cells carry no momentum
+        v = np.where(empty, 0.0, v); U[1] = np.where(empty, 0.0, U[1])
         e = np.maximum(U[2] / (rho * w) - 0.5 * v**2, cv * 5.0)
         T = e / cv; p = (gamma - 1) * rho * e
         return rho, v, p, T
@@ -118,7 +120,7 @@ def solve_gas_column(width_fn, Hg, *, Tb=272.6, gamma=1.33, rg=462.83, Lv=2.84e6
     t_min = (10.0 + Hg / 20.0) if t_min is None else t_min   # sound crossings + evaporation turnover
     Eb = 0.0; F_top = 0.0
     flux_hist = []
-    while t < t_max:
+    while t < t_max and steps < max_steps:
         rho, v, p, T = prim(U)
         c = np.sqrt(gamma * p / rho)
         dt = cfl * np.min(dz / (np.abs(v) + c))
