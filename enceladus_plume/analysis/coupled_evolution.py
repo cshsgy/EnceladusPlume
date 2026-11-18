@@ -22,6 +22,7 @@ _trapz = getattr(np, "trapezoid", getattr(np, "trapz", None))
 ap = argparse.ArgumentParser()
 ap.add_argument("--L", type=float, default=10.0); ap.add_argument("--dw", type=float, default=5.4)
 ap.add_argument("--mech", choices=["crush", "squash", "lidfail"], default="crush", help="lidfail: where the lining reaches the ceiling the bridged lid fails and falls (lining reset to half the ceiling, the sawtooth mean)")
+ap.add_argument("--init", default=None, help="npz with e/zeta/hist to continue from"); ap.add_argument("--tsaw", type=float, default=10.0, help="cells that would bridge within this many orbits are treated as a sawtooth and do not limit the step")
 ap.add_argument("--dztop", type=float, default=0.1); ap.add_argument("--ngas", type=int, default=500); ap.add_argument("--gfloor", type=float, default=0.5)
 ap.add_argument("--phases", type=int, default=6); ap.add_argument("--iters", type=int, default=60)
 ap.add_argument("--demax", type=float, default=0.25, help="max lining change per iteration [mm]")
@@ -60,8 +61,11 @@ def gas_phase(hk, wk, e):
     ok = r.p > 1e-3; front = float(surface - (zw + r.z[ok].max())) if ok.any() else Hg
     return Ev, r.flux_out, r.evap_in, front, bool(r.converged)
 
-e = np.zeros(len(zeta)); hist = []; orbit = 0.0
-for it in range(1, a.iters + 1):
+e = np.zeros(len(zeta)); hist = []; orbit = 0.0; it0 = 0
+if a.init:
+    d0 = np.load(a.init); e = np.interp(zeta, d0["zeta"], d0["e"]); hist = json.loads(str(d0["hist"])); orbit = hist[-1]["orbit"]; it0 = hist[-1]["it"]
+    print(f"[{a.tag}] continuing from {a.init} at orbit {orbit:.1f} (it {it0})", flush=True)
+for it in range(it0 + 1, it0 + a.iters + 1):
     t0 = time.time()
     wt, ht, tt, vt = liquid_dynamics_tapered(w_in, t_in, L, cfg, e_ice_zeta=zeta, e_ice_values=e, w_floor=gfloor)
     m = tt >= tt[-1] - P; tc, hc, wc, vc = tt[m], ht[m], wt[m], vt[m]; dwc = np.gradient(wt, tt)[m]
@@ -87,7 +91,7 @@ for it in range(1, a.iters + 1):
         melt[cov] += Cf * rho_w * np.abs(v) ** 3 / Lf * dts[j]
     rate = (dep - melt) / RHO_ICE                       # m per wall per orbit
     free = (e < e_max - 1e-6) | (rate < 0)
-    if a.mech == "lidfail": free = free & (rate * 1.0 < e_max)   # cells that bridge within an orbit are sawtooth-limited anyway
+    if a.mech == "lidfail": free = free & (e + np.clip(rate, 0, None) * a.tsaw < e_max)   # sawtooth cells do not limit the step
     rmax = float(np.max(np.abs(rate[free]))) if free.any() else 1e-9
     cycles = float(np.clip(a.demax * 1e-3 / max(rmax, 1e-12), 1.0, 50.0))
     e_new = np.clip(e + rate * cycles, 0.0, None)
