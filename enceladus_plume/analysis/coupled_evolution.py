@@ -22,7 +22,7 @@ _trapz = getattr(np, "trapezoid", getattr(np, "trapz", None))
 ap = argparse.ArgumentParser()
 ap.add_argument("--L", type=float, default=10.0); ap.add_argument("--dw", type=float, default=5.4)
 ap.add_argument("--mu", type=float, default=0.3, help="shear: friction coefficient at the wall contact"); ap.add_argument("--sigma-tide", type=float, default=0.1, help="shear: tidal normal stress across the crack [MPa]")
-ap.add_argument("--slip", type=float, default=0.5, help="shear: strike-slip displacement per orbit [m]"); ap.add_argument("--eta", type=float, default=1.0, help="shear: fraction of the frictional heat that melts lining")
+ap.add_argument("--slip", type=float, default=0.5, help="shear: strike-slip displacement per orbit [m]"); ap.add_argument("--eta", type=float, default=1.0, help="shear: fraction of the frictional heat that melts lining"); ap.add_argument("--ctol", type=float, default=0.2, help="shear: the walls are in contact when the gap is within this of the floor gap [mm]")
 ap.add_argument("--mech", choices=["crush", "squash", "lidfail", "shear"], default="crush", help="lidfail: where the lining reaches the ceiling the bridged lid fails and falls (lining reset to half the ceiling, the sawtooth mean)")
 ap.add_argument("--init", default=None, help="npz with e/zeta/hist to continue from"); ap.add_argument("--tsaw", type=float, default=10.0, help="cells that would bridge within this many orbits are treated as a sawtooth and do not limit the step")
 ap.add_argument("--dztop", type=float, default=0.1); ap.add_argument("--ngas", type=int, default=500); ap.add_argument("--gfloor", type=float, default=0.5)
@@ -101,7 +101,7 @@ for it in range(it0 + 1, it0 + a.iters + 1):
     if a.mech == "shear":
         dzc = np.gradient(zeta); contact_time = 0.0; sig_n = []
         for j, k in enumerate(sel):
-            C = wc[k] < 2 * e + gfloor
+            C = (wc[k] - 2 * e) <= gfloor + a.ctol * 1e-3        # lining within ctol of bridging: in contact
             if not C.any(): continue
             lc = float(dzc[C].sum()); contact_time += dts[j] / P
             shear[C] += Q_total * (dts[j] / P) / lc                  # J per m^2 of wall pair in this cell
